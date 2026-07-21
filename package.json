@@ -1,26 +1,48 @@
 {
-  "name": "markdown-visualizer",
+  "name": "botlens",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@sparticuz/chromium": "^149.0.0",
+    "@tailwindcss/typography": "^0.5.20",
+    "cheerio": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "diff": "^9.0.0",
+    "lucide-react": "^1.25.0",
     "next": "16.2.10",
+    "node-html-markdown": "^2.0.0",
+    "playwright-core": "^1.61.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "shadcn": "^4.13.1",
+    "tailwind-merge": "^3.6.0",
+    "turndown": "^7.2.4",
+    "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/diff": "^7.0.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/turndown": "^5.0.6",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "playwright": "^1.61.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
