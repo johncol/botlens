@@ -12,7 +12,7 @@ import { AI_CRAWLERS } from "@/lib/crawlers";
  * node-html-markdown has no built-in video handler, so videos are silently
  * dropped without this translator.
  */
-const nhm = new NodeHtmlMarkdown(
+const nhmConverter = new NodeHtmlMarkdown(
   {},
   {
     video: ((ctx) => {
@@ -23,10 +23,23 @@ const nhm = new NodeHtmlMarkdown(
       if (!src) {
         src = node.querySelector("source")?.getAttribute("src") ?? "";
       }
-      if (!src) return { ignore: true };
-      const label = node.getAttribute("title") || "Video";
+      const title = node.getAttribute("title");
+      const poster = node.getAttribute("poster") ?? "";
+      if (!src && !poster) {
+        return { ignore: true };
+      }
+
+      if (!src) {
+        // No playable source but has a poster image — render as image
+        return {
+          content: `[${title || "VideoPoster"}](${poster})`,
+          surroundingNewlines: 1,
+          preserveIfEmpty: false,
+        };
+      }
+
       return {
-        content: `[${label}](${src})`,
+        content: `[${title || "Video"}](${src})`,
         surroundingNewlines: 1,
         preserveIfEmpty: false,
       };
@@ -265,11 +278,11 @@ export async function POST(request: NextRequest) {
 
   const humanMarkdown =
     humanResult.status === "fulfilled"
-      ? nhm.translate(humanResult.value.html)
+      ? nhmConverter.translate(humanResult.value.html)
       : null;
   const crawlerMarkdown =
     crawlerResult.status === "fulfilled"
-      ? nhm.translate(crawlerResult.value)
+      ? nhmConverter.translate(crawlerResult.value)
       : null;
 
   const humanWarning = humanResult.status === "fulfilled"
