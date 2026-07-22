@@ -17,6 +17,20 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### AI crawler comparison prefills
+
+Copy `.env.example` to `.env.local` and set any values you want prefilled on
+the AI Crawler Comparison page. These variables are read only during local
+development and only provide initial values; every input remains editable.
+
+`DOMAIN` accepts a production hostname or URL. `PAGE` accepts a path or full
+URL. Credentials can be configured independently for each protected
+environment with `STAGING_USER` / `STAGING_PASSWORD`, `DEVELOPMENT_USER` /
+`DEVELOPMENT_PASSWORD`, and `UAT_USER` / `UAT_PASSWORD`.
+
+Credential prefills are sent to browser memory so the form can use them. They
+are never persisted to local history and are ignored outside development.
+
 ### Vercel runtime parity check
 
 Install Docker, then run the production API smoke test in the same AWS Lambda
