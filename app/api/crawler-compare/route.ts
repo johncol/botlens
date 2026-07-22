@@ -7,8 +7,6 @@ import { ENVIRONMENTS, type Environment } from "@/lib/environments";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
 import { AI_CRAWLERS } from "@/lib/crawlers";
 
-export const maxDuration = 60;
-
 /**
  * Custom NHM instance that preserves <video> elements as markdown links.
  * node-html-markdown has no built-in video handler, so videos are silently
