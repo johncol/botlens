@@ -230,9 +230,13 @@ interface AiCrawlerRenderComparisonClientProps {
 export default function AiCrawlerRenderComparisonClient({
   initialValues,
 }: AiCrawlerRenderComparisonClientProps) {
-  const [history, setHistory] = useState<CrawlerComparisonEntry[]>(
-    () => loadHistory<CrawlerComparisonEntry>(CRAWLER_COMPARISON_KEY),
-  );
+  const [history, setHistory] = useState<CrawlerComparisonEntry[]>([]);
+
+  useEffect(() => {
+    /** Necessary to avoid hydration mismatches */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHistory(loadHistory<CrawlerComparisonEntry>(CRAWLER_COMPARISON_KEY));
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Domain is stored as the raw production hostname the user entered.

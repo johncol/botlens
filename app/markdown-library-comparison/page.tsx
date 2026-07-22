@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { HistoryEntry, ConversionResult, SidebarEntry } from "@/types";
 import {
   loadHistory,
@@ -18,9 +18,13 @@ function toSidebarEntry(e: HistoryEntry): SidebarEntry {
 }
 
 export default function LibraryComparisonPage() {
-  const [history, setHistory] = useState<HistoryEntry[]>(
-    () => loadHistory<HistoryEntry>(LIBRARY_COMPARISON_KEY),
-  );
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  useEffect(() => {
+    /** Necessary to avoid hydration mismatches */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHistory(loadHistory<HistoryEntry>(LIBRARY_COMPARISON_KEY));
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<ConversionResult | null>(
     null,

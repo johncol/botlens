@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PageComparisonEntry, SidebarEntry } from "@/types";
 import {
   loadHistory,
@@ -20,9 +20,13 @@ function toSidebarEntry(e: PageComparisonEntry): SidebarEntry {
 }
 
 export default function PageComparisonPage() {
-  const [history, setHistory] = useState<PageComparisonEntry[]>(
-    () => loadHistory<PageComparisonEntry>(PAGE_COMPARISON_KEY),
-  );
+  const [history, setHistory] = useState<PageComparisonEntry[]>([]);
+
+  useEffect(() => {
+    /** Necessary to avoid hydration mismatches */
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHistory(loadHistory<PageComparisonEntry>(PAGE_COMPARISON_KEY));
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const [leftMarkdown, setLeftMarkdown] = useState<string | null>(null);
