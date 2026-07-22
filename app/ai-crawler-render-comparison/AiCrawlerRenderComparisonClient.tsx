@@ -30,7 +30,7 @@ import {
 } from "@/components/MarkdownLinkCopy";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Loader2, Bot, User, X, Lock } from "lucide-react";
+import { AlertTriangle, Loader2, Bot, User, X, Lock, Maximize2, Minimize2 } from "lucide-react";
 
 function toSidebarEntry(e: CrawlerComparisonEntry): SidebarEntry {
   try {
@@ -60,6 +60,8 @@ interface PanelProps {
   error?: string;
   /** When viewMode === 'diff', diff the crawler content against this base */
   diffBase?: string | null;
+  isExpanded?: boolean;
+  onExpand?: () => void;
 }
 
 function OutputPanel({
@@ -70,6 +72,8 @@ function OutputPanel({
   warning,
   error,
   diffBase,
+  isExpanded,
+  onExpand,
 }: PanelProps) {
   const [dismissedWarning, setDismissedWarning] = useState<string>();
   const [dismissedError, setDismissedError] = useState<string>();
@@ -100,25 +104,41 @@ function OutputPanel({
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {title}
         </h3>
-        {diffStats && (
-          <div className="ml-auto flex items-center gap-1.5">
-            {diffStats.removed > 0 && (
-              <span className="text-xs font-mono font-medium text-red-600 dark:text-red-400">
-                −{diffStats.removed}
-              </span>
-            )}
-            {diffStats.added > 0 && (
-              <span className="text-xs font-mono font-medium text-green-600 dark:text-green-400">
-                +{diffStats.added}
-              </span>
-            )}
-            {diffStats.removed === 0 && diffStats.added === 0 && (
-              <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                identical
-              </span>
-            )}
-          </div>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {diffStats && (
+            <div className="flex items-center gap-1.5">
+              {diffStats.removed > 0 && (
+                <span className="text-xs font-mono font-medium text-red-600 dark:text-red-400">
+                  −{diffStats.removed}
+                </span>
+              )}
+              {diffStats.added > 0 && (
+                <span className="text-xs font-mono font-medium text-green-600 dark:text-green-400">
+                  +{diffStats.added}
+                </span>
+              )}
+              {diffStats.removed === 0 && diffStats.added === 0 && (
+                <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                  identical
+                </span>
+              )}
+            </div>
+          )}
+          {onExpand && (
+            <button
+              type="button"
+              onClick={onExpand}
+              aria-label={isExpanded ? "Collapse panel" : "Expand panel"}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {isExpanded ? (
+                <Minimize2 className="w-3.5 h-3.5" />
+              ) : (
+                <Maximize2 className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
       {warning && warning !== dismissedWarning && (
         <div className="flex items-start gap-1.5 px-4 py-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800 shrink-0">
@@ -246,6 +266,7 @@ export default function AiCrawlerRenderComparisonClient({
     undefined,
   );
   const [viewMode, setViewMode] = useState<ViewMode>("rendered");
+  const [diffExpanded, setDiffExpanded] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -394,6 +415,7 @@ export default function AiCrawlerRenderComparisonClient({
           return;
         }
 
+        setDiffExpanded(false);
         setHumanMarkdown(data.humanMarkdown);
         setCrawlerMarkdown(data.crawlerMarkdown);
         setHumanWarning(data.humanWarning ?? undefined);
@@ -436,6 +458,7 @@ export default function AiCrawlerRenderComparisonClient({
       const full = history.find((e) => e.id === entry.id);
       if (!full) return;
       setActiveId(full.id);
+      setDiffExpanded(false);
       setHumanMarkdown(full.humanMarkdown);
       setCrawlerMarkdown(full.crawlerMarkdown);
       setHumanWarning(full.humanWarning);
@@ -689,14 +712,21 @@ export default function AiCrawlerRenderComparisonClient({
                 )}
               </div>
               <div className="flex flex-1 gap-3 overflow-hidden min-h-0">
-                <OutputPanel
-                  title="Source: Human Experience"
-                  icon={<User className="w-3.5 h-3.5" />}
-                  markdown={humanMarkdown}
-                  viewMode={viewMode === "diff" ? "raw" : viewMode}
-                  warning={humanWarning}
-                  error={humanError}
-                />
+                <div
+                  className={cn(
+                    "flex-1 min-w-0 min-h-0 overflow-hidden",
+                    diffExpanded && "hidden",
+                  )}
+                >
+                  <OutputPanel
+                    title="Source: Human Experience"
+                    icon={<User className="w-3.5 h-3.5" />}
+                    markdown={humanMarkdown}
+                    viewMode={viewMode === "diff" ? "raw" : viewMode}
+                    warning={humanWarning}
+                    error={humanError}
+                  />
+                </div>
                 <OutputPanel
                   title="Source: AI Crawler Experience"
                   icon={<Bot className="w-3.5 h-3.5" />}
@@ -705,6 +735,8 @@ export default function AiCrawlerRenderComparisonClient({
                   warning={crawlerWarning}
                   error={crawlerError}
                   diffBase={viewMode === "diff" ? humanMarkdown : undefined}
+                  isExpanded={diffExpanded}
+                  onExpand={() => setDiffExpanded((v) => !v)}
                 />
               </div>
             </>
