@@ -63,6 +63,12 @@ function OutputPanel({
   warning,
   diffBase,
 }: PanelProps) {
+  const [warningDismissed, setWarningDismissed] = useState(false);
+
+  useEffect(() => {
+    setWarningDismissed(false);
+  }, [warning]);
+
   const diffChunks = useMemo(() => {
     if (viewMode !== "diff" || diffBase == null || markdown == null)
       return null;
@@ -107,10 +113,18 @@ function OutputPanel({
           </div>
         )}
       </div>
-      {warning && (
+      {warning && !warningDismissed && (
         <div className="flex items-start gap-1.5 px-4 py-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800 shrink-0">
           <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" />
-          <span>{warning}</span>
+          <span className="flex-1">{warning}</span>
+          <button
+            type="button"
+            aria-label="Dismiss warning"
+            onClick={() => setWarningDismissed(true)}
+            className="shrink-0 ml-1 text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
       <div className="flex-1 overflow-y-auto">
