@@ -243,37 +243,50 @@ export async function POST(request: NextRequest) {
     fetchCrawlerHtml(rawUrl, crawlerUserAgent, creds),
   ]);
 
+  const humanError =
+    humanResult.status === "rejected"
+      ? humanResult.reason instanceof Error
+        ? humanResult.reason.message
+        : "Unknown error"
+      : undefined;
+  const crawlerError =
+    crawlerResult.status === "rejected"
+      ? crawlerResult.reason instanceof Error
+        ? crawlerResult.reason.message
+        : "Unknown error"
+      : undefined;
+
   if (humanResult.status === "rejected") {
     console.error("Human experience fetch failed", humanResult.reason);
-    return NextResponse.json(
-      {
-        error: `Human Experience: ${humanResult.reason?.message ?? "Unknown error"}`,
-      },
-      { status: 502 },
-    );
   }
   if (crawlerResult.status === "rejected") {
     console.error("AI crawler experience fetch failed", crawlerResult.reason);
-    return NextResponse.json(
-      {
-        error: `AI Crawler Experience: ${crawlerResult.reason?.message ?? "Unknown error"}`,
-      },
-      { status: 502 },
-    );
   }
 
-  const humanMarkdown = nhm.translate(humanResult.value.html);
-  const crawlerMarkdown = nhm.translate(crawlerResult.value);
+  const humanMarkdown =
+    humanResult.status === "fulfilled"
+      ? nhm.translate(humanResult.value.html)
+      : null;
+  const crawlerMarkdown =
+    crawlerResult.status === "fulfilled"
+      ? nhm.translate(crawlerResult.value)
+      : null;
 
-  const crawlerWarning = crawlerMarkdown.trim()
-    ? undefined
-    : "Crawler received a page with no readable text in <main> — the site likely requires JavaScript to render content. Raw bots see an empty shell.";
+  const humanWarning = humanResult.status === "fulfilled"
+    ? humanResult.value.warning
+    : undefined;
+  const crawlerWarning =
+    crawlerMarkdown !== null && !crawlerMarkdown.trim()
+      ? "Crawler received a page with no readable text in <main> — the site likely requires JavaScript to render content. Raw bots see an empty shell."
+      : undefined;
 
   return NextResponse.json({
     humanMarkdown,
     crawlerMarkdown,
     resolvedUrl: rawUrl,
-    humanWarning: humanResult.value.warning,
+    humanWarning,
     crawlerWarning,
+    humanError,
+    crawlerError,
   });
 }

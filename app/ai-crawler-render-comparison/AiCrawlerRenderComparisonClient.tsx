@@ -57,6 +57,7 @@ interface PanelProps {
   markdown: string | null;
   viewMode: ViewMode;
   warning?: string;
+  error?: string;
   /** When viewMode === 'diff', diff the crawler content against this base */
   diffBase?: string | null;
 }
@@ -67,15 +68,13 @@ function OutputPanel({
   markdown,
   viewMode,
   warning,
+  error,
   diffBase,
 }: PanelProps) {
-  const [warningDismissed, setWarningDismissed] = useState(false);
+  const [dismissedWarning, setDismissedWarning] = useState<string>();
+  const [dismissedError, setDismissedError] = useState<string>();
   const { copiedUrl, triggerCopy } = useCopyLinkToast();
   const linkComponents = makeLinkComponents(triggerCopy);
-
-  useEffect(() => {
-    setWarningDismissed(false);
-  }, [warning]);
 
   const diffChunks = useMemo(() => {
     if (viewMode !== "diff" || diffBase == null || markdown == null)
@@ -121,15 +120,29 @@ function OutputPanel({
           </div>
         )}
       </div>
-      {warning && !warningDismissed && (
+      {warning && warning !== dismissedWarning && (
         <div className="flex items-start gap-1.5 px-4 py-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800 shrink-0">
           <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" />
           <span className="flex-1">{warning}</span>
           <button
             type="button"
             aria-label="Dismiss warning"
-            onClick={() => setWarningDismissed(true)}
+            onClick={() => setDismissedWarning(warning)}
             className="shrink-0 ml-1 text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+      {error && error !== dismissedError && (
+        <div className="flex items-start gap-1.5 px-4 py-2 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-800 shrink-0">
+          <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" />
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            aria-label="Dismiss error"
+            onClick={() => setDismissedError(error)}
+            className="shrink-0 ml-1 text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -176,6 +189,10 @@ function OutputPanel({
               No readable text returned.
             </div>
           )
+        ) : error ? (
+          <div className="flex items-center justify-center h-full min-h-[120px] text-muted-foreground text-xs">
+            Content unavailable.
+          </div>
         ) : (
           <div className="flex items-center justify-center h-full min-h-[120px] text-muted-foreground text-xs">
             Submit a URL above to see results.
@@ -220,6 +237,10 @@ export default function AiCrawlerRenderComparisonClient({
     undefined,
   );
   const [crawlerWarning, setCrawlerWarning] = useState<string | undefined>(
+    undefined,
+  );
+  const [humanError, setHumanError] = useState<string | undefined>(undefined);
+  const [crawlerError, setCrawlerError] = useState<string | undefined>(
     undefined,
   );
   const [viewMode, setViewMode] = useState<ViewMode>("rendered");
@@ -379,6 +400,8 @@ export default function AiCrawlerRenderComparisonClient({
         setCrawlerMarkdown(data.crawlerMarkdown);
         setHumanWarning(data.humanWarning ?? undefined);
         setCrawlerWarning(data.crawlerWarning ?? undefined);
+        setHumanError(data.humanError ?? undefined);
+        setCrawlerError(data.crawlerError ?? undefined);
 
         const entry: Omit<CrawlerComparisonEntry, "id" | "createdAt"> = {
           url: data.resolvedUrl ?? fullUrl,
@@ -386,6 +409,10 @@ export default function AiCrawlerRenderComparisonClient({
           crawlerLabel: selectedCrawler.label,
           humanMarkdown: data.humanMarkdown,
           crawlerMarkdown: data.crawlerMarkdown,
+          humanWarning: data.humanWarning,
+          crawlerWarning: data.crawlerWarning,
+          humanError: data.humanError,
+          crawlerError: data.crawlerError,
         };
 
         setHistory((prev) => {
@@ -413,8 +440,10 @@ export default function AiCrawlerRenderComparisonClient({
       setActiveId(full.id);
       setHumanMarkdown(full.humanMarkdown);
       setCrawlerMarkdown(full.crawlerMarkdown);
-      setHumanWarning(undefined);
-      setCrawlerWarning(undefined);
+      setHumanWarning(full.humanWarning);
+      setCrawlerWarning(full.crawlerWarning);
+      setHumanError(full.humanError);
+      setCrawlerError(full.crawlerError);
 
       // Restore domain + page from stored URL
       try {
@@ -444,8 +473,10 @@ export default function AiCrawlerRenderComparisonClient({
           setActiveId(next?.id ?? null);
           setHumanMarkdown(next?.humanMarkdown ?? null);
           setCrawlerMarkdown(next?.crawlerMarkdown ?? null);
-          setHumanWarning(undefined);
-          setCrawlerWarning(undefined);
+          setHumanError(next?.humanError);
+          setCrawlerError(next?.crawlerError);
+          setHumanWarning(next?.humanWarning);
+          setCrawlerWarning(next?.crawlerWarning);
         }
         return updated;
       });
@@ -635,7 +666,10 @@ export default function AiCrawlerRenderComparisonClient({
         />
 
         <main className="flex flex-col flex-1 overflow-hidden p-4 gap-3">
-          {humanMarkdown !== null || crawlerMarkdown !== null ? (
+          {humanMarkdown !== null ||
+          crawlerMarkdown !== null ||
+          humanError ||
+          crawlerError ? (
             <>
               <div className="flex items-center justify-between shrink-0">
                 <ViewToggle
@@ -663,6 +697,7 @@ export default function AiCrawlerRenderComparisonClient({
                   markdown={humanMarkdown}
                   viewMode={viewMode === "diff" ? "raw" : viewMode}
                   warning={humanWarning}
+                  error={humanError}
                 />
                 <OutputPanel
                   title="Source: AI Crawler Experience"
@@ -670,6 +705,7 @@ export default function AiCrawlerRenderComparisonClient({
                   markdown={crawlerMarkdown}
                   viewMode={viewMode}
                   warning={crawlerWarning}
+                  error={crawlerError}
                   diffBase={viewMode === "diff" ? humanMarkdown : undefined}
                 />
               </div>

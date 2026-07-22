@@ -33,6 +33,10 @@ export type CrawlerComparisonEntry = {
   url: string;
   environment: string;
   crawlerLabel: string;
-  humanMarkdown: string;
-  crawlerMarkdown: string;
+  humanMarkdown: string | null;
+  crawlerMarkdown: string | null;
+  humanWarning?: string;
+  crawlerWarning?: string;
+  humanError?: string;
+  crawlerError?: string;
 };
