@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import TurndownService from "turndown";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
+import { stripStyleTags } from "@/lib/utils";
 
 const MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
 
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
   }
 
   const tdResult = turndown.turndown(html);
-  const nhmResult = NodeHtmlMarkdown.translate(html);
+  const nhmResult = NodeHtmlMarkdown.translate(stripStyleTags(html));
 
   return NextResponse.json({ turndown: tdResult, nodeHtmlMarkdown: nhmResult });
 }

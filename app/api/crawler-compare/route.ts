@@ -6,6 +6,7 @@ import type { TranslatorConfigFactory } from "node-html-markdown";
 import { ENVIRONMENTS, type Environment } from "@/lib/environments";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
 import { AI_CRAWLERS } from "@/lib/crawlers";
+import { stripStyleTags } from "@/lib/utils";
 
 /**
  * Custom NHM instance that preserves <video> elements as markdown links.
@@ -62,7 +63,7 @@ function extractMain(html: string): string {
 
 async function fetchHumanHtml(
   url: string,
-  creds: { username: string; password: string } | null,
+  credentials: { username: string; password: string } | null,
 ): Promise<{ html: string; warning?: string }> {
   let executablePath: string | undefined;
   let args: string[] | undefined;
@@ -81,10 +82,10 @@ async function fetchHumanHtml(
 
   try {
     const context = await browser.newContext();
-    if (creds) {
+    if (credentials) {
       await context.setHTTPCredentials({
-        username: creds.username,
-        password: creds.password,
+        username: credentials.username,
+        password: credentials.password,
       });
     }
 
@@ -136,16 +137,16 @@ async function fetchHumanHtml(
 async function fetchCrawlerHtml(
   url: string,
   userAgent: string,
-  creds: { username: string; password: string } | null,
+  credentials: { username: string; password: string } | null,
 ): Promise<string> {
   const headers: Record<string, string> = {
     "User-Agent": userAgent,
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   };
 
-  if (creds) {
+  if (credentials) {
     headers["Authorization"] =
-      `Basic ${Buffer.from(`${creds.username}:${creds.password}`).toString("base64")}`;
+      `Basic ${Buffer.from(`${credentials.username}:${credentials.password}`).toString("base64")}`;
   }
 
   const res = await fetch(url, {
@@ -215,12 +216,12 @@ export async function POST(request: NextRequest) {
 
   const env = environment as Environment;
 
-  const creds =
+  const credentials =
     ENVIRONMENTS[env].requiresAuth && username && password
       ? { username, password }
       : null;
 
-  if (ENVIRONMENTS[env].requiresAuth && !creds) {
+  if (ENVIRONMENTS[env].requiresAuth && !credentials) {
     return NextResponse.json(
       { error: "Credentials required for this environment" },
       { status: 400 },
@@ -252,8 +253,8 @@ export async function POST(request: NextRequest) {
   }
 
   const [humanResult, crawlerResult] = await Promise.allSettled([
-    fetchHumanHtml(rawUrl, creds),
-    fetchCrawlerHtml(rawUrl, crawlerUserAgent, creds),
+    fetchHumanHtml(rawUrl, credentials),
+    fetchCrawlerHtml(rawUrl, crawlerUserAgent, credentials),
   ]);
 
   const humanError =
@@ -278,11 +279,11 @@ export async function POST(request: NextRequest) {
 
   const humanMarkdown =
     humanResult.status === "fulfilled"
-      ? nhmConverter.translate(humanResult.value.html)
+      ? nhmConverter.translate(stripStyleTags(humanResult.value.html))
       : null;
   const crawlerMarkdown =
     crawlerResult.status === "fulfilled"
-      ? nhmConverter.translate(crawlerResult.value)
+      ? nhmConverter.translate(stripStyleTags(crawlerResult.value))
       : null;
 
   const humanWarning = humanResult.status === "fulfilled"

@@ -210,7 +210,9 @@ interface AiCrawlerRenderComparisonClientProps {
 export default function AiCrawlerRenderComparisonClient({
   initialValues,
 }: AiCrawlerRenderComparisonClientProps) {
-  const [history, setHistory] = useState<CrawlerComparisonEntry[]>([]);
+  const [history, setHistory] = useState<CrawlerComparisonEntry[]>(
+    () => loadHistory<CrawlerComparisonEntry>(CRAWLER_COMPARISON_KEY),
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Domain is stored as the raw production hostname the user entered.
@@ -252,10 +254,6 @@ export default function AiCrawlerRenderComparisonClient({
   const [envCredentials, setEnvCredentials] = useState<
     Partial<Record<Environment, { username: string; password: string }>>
   >(initialValues.credentials);
-
-  useEffect(() => {
-    setHistory(loadHistory<CrawlerComparisonEntry>(CRAWLER_COMPARISON_KEY));
-  }, []);
 
   // Focus the page input whenever the domain becomes locked
   useEffect(() => {

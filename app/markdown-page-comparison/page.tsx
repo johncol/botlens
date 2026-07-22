@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { PageComparisonEntry, SidebarEntry } from "@/types";
 import {
   loadHistory,
@@ -20,7 +20,9 @@ function toSidebarEntry(e: PageComparisonEntry): SidebarEntry {
 }
 
 export default function PageComparisonPage() {
-  const [history, setHistory] = useState<PageComparisonEntry[]>([]);
+  const [history, setHistory] = useState<PageComparisonEntry[]>(
+    () => loadHistory<PageComparisonEntry>(PAGE_COMPARISON_KEY),
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const [leftMarkdown, setLeftMarkdown] = useState<string | null>(null);
@@ -32,10 +34,6 @@ export default function PageComparisonPage() {
 
   // Track whether each side was just updated (for auto-save trigger)
   const pendingSave = useRef(false);
-
-  useEffect(() => {
-    setHistory(loadHistory<PageComparisonEntry>(PAGE_COMPARISON_KEY));
-  }, []);
 
   // Auto-save when both sides have content
   const autoSave = useCallback(

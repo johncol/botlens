@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { HistoryEntry, ConversionResult, SidebarEntry } from "@/types";
 import {
   loadHistory,
@@ -18,7 +18,9 @@ function toSidebarEntry(e: HistoryEntry): SidebarEntry {
 }
 
 export default function LibraryComparisonPage() {
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>(
+    () => loadHistory<HistoryEntry>(LIBRARY_COMPARISON_KEY),
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<ConversionResult | null>(
     null,
@@ -26,10 +28,6 @@ export default function LibraryComparisonPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("rendered");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setHistory(loadHistory<HistoryEntry>(LIBRARY_COMPARISON_KEY));
-  }, []);
 
   const handleConvert = useCallback(
     async (params: {

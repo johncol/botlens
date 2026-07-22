@@ -50,6 +50,7 @@ export function HistorySidebar({
       if (stored) {
         const parsed = JSON.parse(stored);
         if (typeof parsed.width === "number")
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setWidth(Math.max(MIN_WIDTH, parsed.width));
         if (typeof parsed.collapsed === "boolean")
           setIsCollapsed(parsed.collapsed);
