@@ -3,6 +3,11 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  useCopyLinkToast,
+  CopyLinkToast,
+  makeLinkComponents,
+} from "@/components/MarkdownLinkCopy";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -39,6 +44,8 @@ export function PageSidePanel({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState(false);
+  const { copiedUrl, triggerCopy } = useCopyLinkToast();
+  const linkComponents = makeLinkComponents(triggerCopy);
 
   const htmlBytes = new TextEncoder().encode(htmlValue).length;
   const showSizeWarning =
@@ -195,9 +202,10 @@ export function PageSidePanel({
           <div className="p-4">
             {viewMode === "rendered" ? (
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={linkComponents}>
                   {markdown}
                 </ReactMarkdown>
+                <CopyLinkToast url={copiedUrl} />
               </div>
             ) : (
               <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">

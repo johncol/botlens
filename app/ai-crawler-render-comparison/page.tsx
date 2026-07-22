@@ -22,6 +22,11 @@ import { cn } from "@/lib/utils";
 import { AI_CRAWLERS, DEFAULT_CRAWLER_ID } from "@/lib/crawlers";
 import { HistorySidebar } from "@/components/HistorySidebar";
 import { ViewToggle, type ViewMode } from "@/components/ViewToggle";
+import {
+  useCopyLinkToast,
+  CopyLinkToast,
+  makeLinkComponents,
+} from "@/components/MarkdownLinkCopy";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Loader2, Bot, User, X, Lock } from "lucide-react";
@@ -64,6 +69,8 @@ function OutputPanel({
   diffBase,
 }: PanelProps) {
   const [warningDismissed, setWarningDismissed] = useState(false);
+  const { copiedUrl, triggerCopy } = useCopyLinkToast();
+  const linkComponents = makeLinkComponents(triggerCopy);
 
   useEffect(() => {
     setWarningDismissed(false);
@@ -152,9 +159,10 @@ function OutputPanel({
             <div className="p-4">
               {viewMode === "rendered" ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={linkComponents}>
                     {markdown}
                   </ReactMarkdown>
+                  <CopyLinkToast url={copiedUrl} />
                 </div>
               ) : (
                 <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">
