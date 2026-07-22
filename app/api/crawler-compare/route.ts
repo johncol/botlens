@@ -54,7 +54,14 @@ async function fetchHumanHtml(
   let executablePath: string | undefined;
   if (process.env.VERCEL) {
     const sparticuz = await import("@sparticuz/chromium");
-    executablePath = await sparticuz.default.executablePath();
+    // Pass a remote URL — the local bin/ directory (~62 MB of .br binaries) is
+    // never included by Vercel's output file tracer regardless of plan. On cold
+    // start @sparticuz/chromium downloads and caches to /tmp/chromium; warm
+    // invocations skip the download entirely.
+    const chromiumUrl =
+      process.env.CHROMIUM_DOWNLOAD_URL ??
+      "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.tar";
+    executablePath = await sparticuz.default.executablePath(chromiumUrl);
   } else {
     executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
   }
