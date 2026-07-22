@@ -52,21 +52,17 @@ async function fetchHumanHtml(
   creds: { username: string; password: string } | null,
 ): Promise<{ html: string; warning?: string }> {
   let executablePath: string | undefined;
+  let args: string[] | undefined;
   if (process.env.VERCEL) {
     const sparticuz = await import("@sparticuz/chromium");
-    // Pass a remote URL — the local bin/ directory (~62 MB of .br binaries) is
-    // never included by Vercel's output file tracer regardless of plan. On cold
-    // start @sparticuz/chromium downloads and caches to /tmp/chromium; warm
-    // invocations skip the download entirely.
-    const chromiumUrl =
-      process.env.CHROMIUM_DOWNLOAD_URL ??
-      "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.tar";
-    executablePath = await sparticuz.default.executablePath(chromiumUrl);
+    executablePath = await sparticuz.default.executablePath();
+    args = sparticuz.default.args;
   } else {
     executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
   }
   const browser = await chromium.launch({
     headless: true,
+    ...(args ? { args } : {}),
     ...(executablePath ? { executablePath } : {}),
   });
 
@@ -248,6 +244,7 @@ export async function POST(request: NextRequest) {
   ]);
 
   if (humanResult.status === "rejected") {
+    console.error("Human experience fetch failed", humanResult.reason);
     return NextResponse.json(
       {
         error: `Human Experience: ${humanResult.reason?.message ?? "Unknown error"}`,
@@ -256,6 +253,7 @@ export async function POST(request: NextRequest) {
     );
   }
   if (crawlerResult.status === "rejected") {
+    console.error("AI crawler experience fetch failed", crawlerResult.reason);
     return NextResponse.json(
       {
         error: `AI Crawler Experience: ${crawlerResult.reason?.message ?? "Unknown error"}`,

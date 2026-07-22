@@ -2,13 +2,17 @@
   "name": "botlens",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:vercel": "docker build --platform linux/amd64 -f Dockerfile.vercel-parity -t botlens-vercel-parity . && docker run --rm --platform linux/amd64 -e SMOKE_TEST_URL botlens-vercel-parity"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

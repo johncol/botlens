@@ -17,6 +17,24 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Vercel runtime parity check
+
+Install Docker, then run the production API smoke test in the same AWS Lambda
+Node.js major version used by Vercel:
+
+```bash
+npm run test:vercel
+```
+
+The test builds Next.js standalone output, verifies the traced deployment
+artifact contains the externalized Chromium package and binary assets, starts
+the production server in Linux, and calls `/api/crawler-compare`. Override its
+public test page with a representative URL containing a `<main>` element:
+
+```bash
+SMOKE_TEST_URL=https://example.com/page npm run test:vercel
+```
+
 ## Deploying to Vercel
 
 ### Environment variables
@@ -24,13 +42,16 @@ Open [http://localhost:3000](http://localhost:3000).
 | Variable | Required | Description |
 |---|---|---|
 | `GATE_PASSWORD` | No | When set, enables password protection for the app. Users must enter this password to access the UI. Omit to disable auth entirely. |
-| `CHROMIUM_DOWNLOAD_URL` | No | Override the URL used to download the Chromium binary on Vercel. Defaults to the `@sparticuz/chromium` GitHub Releases tarball matching the installed package version (`v149.0.0`). Useful if you self-host the binary or need to pin a specific build. |
-| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` | Local only | Path to a local Chromium executable for the AI crawler comparison feature. Not needed on Vercel — Chromium is downloaded remotely via `@sparticuz/chromium`. |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` | Local only | Path to a local Chromium executable for the AI crawler comparison feature. Not needed on Vercel, where the traced `@sparticuz/chromium` assets are used. |
 
 > **Note:** The `VERCEL` environment variable is set automatically by the Vercel platform and does not need to be configured manually.
 
 ### How Chromium works on Vercel
 
-The `@sparticuz/chromium` package ships a ~62 MB Chromium binary in its `bin/` directory. Vercel's output file tracer excludes binary files, and the Hobby plan has a 50 MB function size limit — so the local binary can never be used on Vercel.
+`@sparticuz/chromium` remains external to the Next.js bundle so its relative
+file lookup works. `outputFileTracingIncludes` copies its compressed `bin/`
+assets into the function artifact. On cold start, `executablePath()` extracts
+those bundled assets into `/tmp`; warm invocations reuse `/tmp/chromium`.
 
-Instead, on cold-start, `executablePath()` is passed a GitHub Releases download URL and `@sparticuz/chromium` fetches and decompresses the binary into `/tmp`. Subsequent warm invocations reuse the cached binary in `/tmp/chromium`, so the download only happens once per container lifetime.
+The project pins Node.js 24 in `package.json`, matching the Docker parity image
+and overriding any different Vercel dashboard default.
