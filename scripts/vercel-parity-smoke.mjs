@@ -30,7 +30,7 @@ async function waitForServer() {
 
 try {
   await waitForServer();
-  const response = await fetch(`${baseUrl}/api/crawler-compare`, {
+  const response = await fetch(`${baseUrl}/api/human-vs-bot`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -44,11 +44,11 @@ try {
 
   if (!response.ok) {
     throw new Error(
-      `Crawler comparison returned ${response.status}: ${JSON.stringify(result)}`,
+      `Human vs Bot returned ${response.status}: ${JSON.stringify(result)}`,
     );
   }
   if (!result.humanMarkdown?.trim() || !result.crawlerMarkdown?.trim()) {
-    throw new Error("Crawler comparison returned empty markdown");
+    throw new Error("Human vs Bot returned empty markdown");
   }
 
   console.log(

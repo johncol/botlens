@@ -3,9 +3,9 @@ import { ArrowRight, Hammer, FileText, Bot } from "lucide-react";
 
 const TOOLS = [
   {
-    href: "/ai-crawler-render-comparison",
+    href: "/human-vs-bot",
     icon: Bot,
-    title: "AI Crawler Comparison",
+    title: "Human vs Bot",
     description:
       "Compare what a human sees (full JS-rendered page via Playwright) vs what an AI crawler sees (raw fetch with a bot user agent) for the same URL. Supports multiple environments and 10 AI crawler user agents.",
   },

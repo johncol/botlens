@@ -4,7 +4,7 @@ A local dev tool for inspecting how AI crawlers see your pages and comparing HTM
 
 ## Tools
 
-- **AI Crawler Comparison** — Compare what a human browser (JS-rendered via Playwright) sees vs what an AI crawler (raw fetch with bot user agent) sees for the same URL. Supports multiple environments and 10 AI crawler user agents including GPTBot and ClaudeBot.
+- **Human vs Bot** — Compare what a human browser (JS-rendered via Playwright) sees vs what an AI crawler (raw fetch with bot user agent) sees for the same URL. Supports multiple environments and 10 AI crawler user agents including GPTBot and ClaudeBot.
 - **Library Comparison** — Paste a URL or HTML snippet and compare Turndown vs node-html-markdown output side by side.
 - **Page Comparison** — Convert two different HTML sources and diff the markdown results.
 
@@ -17,10 +17,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### AI crawler comparison prefills
+### Human vs Bot prefills
 
 Copy `.env.example` to `.env.local` and set any values you want prefilled on
-the AI Crawler Comparison page. These variables are read only during local
+the Human vs Bot page. These variables are read only during local
 development and only provide initial values; every input remains editable.
 
 `DOMAIN` accepts a production hostname or URL. `PAGE` accepts a path or full
@@ -42,7 +42,7 @@ npm run test:vercel
 
 The test builds Next.js standalone output, verifies the traced deployment
 artifact contains the externalized Chromium package and binary assets, starts
-the production server in Linux, and calls `/api/crawler-compare`. Override its
+the production server in Linux, and calls `/api/human-vs-bot`. Override its
 public test page with a representative URL containing a `<main>` element:
 
 ```bash
@@ -56,7 +56,7 @@ SMOKE_TEST_URL=https://example.com/page npm run test:vercel
 | Variable | Required | Description |
 |---|---|---|
 | `GATE_PASSWORD` | No | When set, enables password protection for the app. Users must enter this password to access the UI. Omit to disable auth entirely. |
-| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` | Local only | Path to a local Chromium executable for the AI crawler comparison feature. Not needed on Vercel, where the traced `@sparticuz/chromium` assets are used. |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` | Local only | Path to a local Chromium executable for the Human vs Bot feature. Not needed on Vercel, where the traced `@sparticuz/chromium` assets are used. |
 
 > **Note:** The `VERCEL` environment variable is set automatically by the Vercel platform and does not need to be configured manually.
 

@@ -197,13 +197,13 @@ function OutputPanel({
   );
 }
 
-interface AiCrawlerRenderComparisonClientProps {
+interface HumanVsBotClientProps {
   initialValues: CrawlerComparisonInitialValues;
 }
 
-export default function AiCrawlerRenderComparisonClient({
+export default function HumanVsBotClient({
   initialValues,
-}: AiCrawlerRenderComparisonClientProps) {
+}: HumanVsBotClientProps) {
   const [history, setHistory] = useState<CrawlerComparisonEntry[]>([]);
 
   useEffect(() => {
@@ -373,7 +373,7 @@ export default function AiCrawlerRenderComparisonClient({
       setError(null);
 
       try {
-        const res = await fetch("/api/crawler-compare", {
+        const res = await fetch("/api/human-vs-bot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

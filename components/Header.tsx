@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   {
-    href: "/ai-crawler-render-comparison",
-    label: "AI Crawler Comparison",
+    href: "/human-vs-bot",
+    label: "Human vs Bot",
     icon: Bot,
   },
   {
