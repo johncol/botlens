@@ -3,8 +3,7 @@ import TurndownService from "turndown";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
 import { stripStyleTags } from "@/lib/html-to-markdown";
-
-const MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
+import { IS_LOCAL, MAX_HTML_BYTES } from "@/lib/config";
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -41,7 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      await assertNotPrivateUrl(url);
+      if (!IS_LOCAL) {
+        await assertNotPrivateUrl(url);
+      }
     } catch (err) {
       return NextResponse.json(
         { error: err instanceof Error ? err.message : "Invalid URL" },
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
   } else if (rawHtml && typeof rawHtml === "string") {
     if (Buffer.byteLength(rawHtml, "utf8") > MAX_HTML_BYTES) {
       return NextResponse.json(
-        { error: "HTML payload too large (max 2 MB)" },
+        { error: `HTML payload too large (max ${MAX_HTML_BYTES} bytes)` },
         { status: 413 },
       );
     }

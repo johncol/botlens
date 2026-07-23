@@ -40,3 +40,21 @@ export type CrawlerComparisonEntry = {
   humanError?: string;
   crawlerError?: string;
 };
+
+export type EnvComparisonEntry = {
+  id: string;
+  createdAt: number;
+  /** Production domain used to build both URLs. */
+  domain: string;
+  page: string;
+  tagFilter: string;
+  crawlerLabel: string;
+  leftEnvironment: string;
+  rightEnvironment: string;
+  leftMarkdown: string | null;
+  rightMarkdown: string | null;
+  leftWarning?: string;
+  rightWarning?: string;
+  leftError?: string;
+  rightError?: string;
+};

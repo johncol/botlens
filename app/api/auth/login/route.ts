@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deriveToken, verifyToken, AUTH_COOKIE } from "@/lib/auth";
+import { GATE_PASSWORD } from "@/lib/config";
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const gatePassword = process.env.GATE_PASSWORD;
+  const gatePassword = GATE_PASSWORD;
   if (!gatePassword) {
     // No password configured — auth is disabled, always succeed
     return NextResponse.json({ ok: true });

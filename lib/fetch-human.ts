@@ -1,4 +1,10 @@
 import { chromium } from "playwright-core";
+import {
+  DEFAULT_SCROLL_MAX,
+  DEFAULT_PAGE_TIMEOUT_MS,
+  IS_VERCEL,
+  PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
+} from "@/lib/config";
 
 export type Credentials = { username: string; password: string };
 
@@ -6,9 +12,6 @@ export type FetchHumanOptions = {
   scrollMax?: number;
   pageTimeoutMs?: number;
 };
-
-const DEFAULT_SCROLL_MAX = 10;
-const DEFAULT_PAGE_TIMEOUT_MS = 60_000;
 
 export async function fetchHumanHtml(
   url: string,
@@ -19,12 +22,12 @@ export async function fetchHumanHtml(
   const pageTimeout = options.pageTimeoutMs ?? DEFAULT_PAGE_TIMEOUT_MS;
   let executablePath: string | undefined;
   let args: string[] | undefined;
-  if (process.env.VERCEL) {
+  if (IS_VERCEL) {
     const sparticuz = await import("@sparticuz/chromium");
     executablePath = await sparticuz.default.executablePath();
     args = sparticuz.default.args;
   } else {
-    executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+    executablePath = PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
   }
 
   const browser = await chromium.launch({

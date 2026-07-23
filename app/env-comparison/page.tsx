@@ -1,9 +1,9 @@
-import HumanVsBotClient from "./HumanVsBotClient";
+import EnvComparisonClient from "./EnvComparisonClient";
 import { getPageInitialValues } from "@/lib/page-prefill";
 
-export default function HumanVsBotPage() {
+export default function EnvComparisonPage() {
   return (
-    <HumanVsBotClient
+    <EnvComparisonClient
       initialValues={getPageInitialValues(process.env)}
     />
   );

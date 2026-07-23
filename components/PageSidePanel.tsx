@@ -18,8 +18,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const SIZE_WARNING_BYTES = 500 * 1024;
+import { SIZE_WARNING_BYTES } from "@/lib/constants";
 
 interface PageSidePanelProps {
   placeholder: string;

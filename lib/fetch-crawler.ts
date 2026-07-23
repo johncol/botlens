@@ -1,17 +1,18 @@
 import * as cheerio from "cheerio";
 import type { Credentials } from "./fetch-human";
+import { DEFAULT_MAX_HTML_BYTES } from "@/lib/config";
 
 export type FetchCrawlerOptions = {
   maxHtmlBytes?: number;
+  /** CSS tag name to extract before converting to markdown. Defaults to `"main"`. */
+  tagFilter?: string;
 };
 
-const DEFAULT_MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
-
-function extractMain(html: string): string {
+function extractTag(html: string, tag: string): string {
   const $ = cheerio.load(html);
-  const main = $("main");
-  if (!main.length) return "";
-  return main.html() ?? "";
+  const el = $(tag);
+  if (!el.length) return "";
+  return el.html() ?? "";
 }
 
 export async function fetchCrawlerHtml(
@@ -21,6 +22,7 @@ export async function fetchCrawlerHtml(
   options: FetchCrawlerOptions = {},
 ): Promise<string> {
   const maxHtmlBytes = options.maxHtmlBytes ?? DEFAULT_MAX_HTML_BYTES;
+  const tagFilter = options.tagFilter ?? "main";
   const headers: Record<string, string> = {
     "User-Agent": userAgent,
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -45,9 +47,9 @@ export async function fetchCrawlerHtml(
     throw new Error("Remote page too large (max 2 MB)");
   }
   const html = new TextDecoder().decode(buffer);
-  const mainHtml = extractMain(html);
-  if (!mainHtml) {
-    throw new Error("No <main> element found on this page.");
+  const tagHtml = extractTag(html, tagFilter);
+  if (!tagHtml) {
+    throw new Error(`No <${tagFilter}> element found on this page.`);
   }
-  return mainHtml;
+  return tagHtml;
 }

@@ -20,7 +20,9 @@ const EMPTY_INITIAL_VALUES: CrawlerComparisonInitialValues = {
 export function getCrawlerComparisonInitialValues(
   env: NodeJS.ProcessEnv,
 ): CrawlerComparisonInitialValues {
-  if (env.NODE_ENV !== "development") return EMPTY_INITIAL_VALUES;
+  if (env.NODE_ENV !== "development") {
+    return EMPTY_INITIAL_VALUES;
+  }
 
   return {
     domain: env.DOMAIN ?? "",

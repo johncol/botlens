@@ -1,6 +1,7 @@
 export const LIBRARY_COMPARISON_KEY = "botlens-library-comparison";
 export const PAGE_COMPARISON_KEY = "botlens-page-comparison";
 export const CRAWLER_COMPARISON_KEY = "botlens-crawler-comparison";
+export const ENV_COMPARISON_KEY = "botlens-env-comparison";
 
 const MAX_HISTORY_ENTRIES = 50;
 

@@ -11,11 +11,11 @@ export type RunComparisonOptions = {
   crawlerUserAgent: string;
   credentials?: Credentials | null;
   /** Max scroll iterations for the human browser fetch */
-  scrollMax?: number;
+  scrollMax: number;
   /** Navigation timeout in ms for the human browser fetch */
-  pageTimeoutMs?: number;
+  pageTimeoutMs: number;
   /** Max response size in bytes for the crawler fetch */
-  maxHtmlBytes?: number;
+  maxHtmlBytes: number;
 };
 
 export type RunComparisonResult = {

@@ -3,6 +3,7 @@ import { ENVIRONMENTS, type Environment } from "@/lib/environments";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
 import { AI_CRAWLERS } from "@/lib/crawlers";
 import { runComparison } from "@/lib/run-comparison";
+import { SCROLL_MAX, PAGE_TIMEOUT_MS, MAX_HTML_BYTES, IS_LOCAL } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   let body: {
@@ -78,7 +79,9 @@ export async function POST(request: NextRequest) {
   void parsedUrl; // used above for protocol check only; assertNotPrivateUrl re-parses internally
 
   try {
-    await assertNotPrivateUrl(rawUrl);
+    if (!IS_LOCAL) {
+      await assertNotPrivateUrl(rawUrl);
+    }
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Invalid URL" },
@@ -86,11 +89,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const scrollMax = process.env.SCROLL_MAX ? Number(process.env.SCROLL_MAX) : undefined;
-  const pageTimeoutMs = process.env.PAGE_TIMEOUT_MS ? Number(process.env.PAGE_TIMEOUT_MS) : undefined;
-  const maxHtmlBytes = process.env.MAX_HTML_BYTES ? Number(process.env.MAX_HTML_BYTES) : undefined;
-
-  const result = await runComparison({ url: rawUrl, crawlerUserAgent, credentials, scrollMax, pageTimeoutMs, maxHtmlBytes });
+  const result = await runComparison({
+    url: rawUrl,
+    crawlerUserAgent,
+    credentials,
+    scrollMax: SCROLL_MAX,
+    pageTimeoutMs: PAGE_TIMEOUT_MS,
+    maxHtmlBytes: MAX_HTML_BYTES,
+  });
 
   return NextResponse.json(result);
 }

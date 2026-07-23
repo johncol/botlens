@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Hammer, FileText, Bot } from "lucide-react";
+import { Home, Hammer, FileText, Bot, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -10,6 +10,11 @@ const NAV_ITEMS = [
     href: "/human-vs-bot",
     label: "Human vs Bot",
     icon: Bot,
+  },
+  {
+    href: "/env-comparison",
+    label: "Env Comparison",
+    icon: GitCompare,
   },
   {
     href: "/markdown-page-comparison",

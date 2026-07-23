@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Loader2, Link, FileCode } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const SIZE_WARNING_BYTES = 500 * 1024; // 500 KB
+import { SIZE_WARNING_BYTES } from "@/lib/constants";
 
 interface InputBarProps {
   onConvert: (params: {
@@ -28,7 +27,7 @@ export function InputBar({ onConvert, isLoading, error }: InputBarProps) {
   const htmlBytes = new TextEncoder().encode(htmlValue).length;
   const showSizeWarning = mode === "html" && htmlBytes > SIZE_WARNING_BYTES;
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     if (mode === "url") {
       const trimmed = urlValue.trim();

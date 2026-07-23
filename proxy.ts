@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken, AUTH_COOKIE } from "@/lib/auth";
+import { GATE_PASSWORD } from "@/lib/config";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,7 +11,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // If no password is configured, allow everything (local dev)
-  const password = process.env.GATE_PASSWORD;
+  const password = GATE_PASSWORD;
   if (!password) {
     return NextResponse.next();
   }

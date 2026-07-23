@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Hammer, FileText, Bot } from "lucide-react";
+import { ArrowRight, Hammer, FileText, Bot, GitCompare } from "lucide-react";
 
 const TOOLS = [
   {
@@ -8,6 +8,13 @@ const TOOLS = [
     title: "Human vs Bot",
     description:
       "Compare what a human sees (full JS-rendered page via Playwright) vs what an AI crawler sees (raw fetch with a bot user agent) for the same URL. Supports multiple environments and 10 AI crawler user agents.",
+  },
+  {
+    href: "/env-comparison",
+    icon: GitCompare,
+    title: "Env Comparison",
+    description:
+      "Fetch the same page from two different environments (e.g. production vs development) using an AI crawler and compare the markdown output side by side. Useful for catching content or structure regressions before shipping.",
   },
   {
     href: "/markdown-page-comparison",
