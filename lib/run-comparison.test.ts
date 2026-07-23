@@ -31,13 +31,15 @@ import { htmlToMarkdown } from "./html-to-markdown";
 // ---------------------------------------------------------------------------
 describe("runComparison", () => {
   beforeEach(() => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.mocked(fetchHumanHtml).mockResolvedValue({ html: "<p>Human</p>" });
     vi.mocked(fetchCrawlerHtml).mockResolvedValue("<p>Crawler</p>");
     vi.mocked(htmlToMarkdown).mockImplementation((html: string) => `md:${html}`);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("returns both markdowns and resolvedUrl on success", async () => {
