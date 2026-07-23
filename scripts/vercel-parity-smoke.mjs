@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 3001);
 const baseUrl = `http://127.0.0.1:${port}`;
 const smokeTestUrl =
   process.env.SMOKE_TEST_URL ??
