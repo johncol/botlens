@@ -8,4 +8,9 @@ export default defineConfig({
       "@": resolve(__dirname, "."),
     },
   },
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./vitest.setup.ts"],
+    globals: true,
+  },
 });
