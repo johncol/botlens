@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { diffLines } from "diff";
+import { compareMarkdowns } from "@/lib/compare-markdowns";
 import { CrawlerComparisonEntry, SidebarEntry } from "@/types";
 import {
   loadHistory,
@@ -30,7 +30,7 @@ import {
 } from "@/components/MarkdownLinkCopy";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Loader2, Bot, User, X, Lock, Maximize2, Minimize2 } from "lucide-react";
+import { AlertTriangle, Loader2, Bot, User, X, Lock } from "lucide-react";
 
 function toSidebarEntry(e: CrawlerComparisonEntry): SidebarEntry {
   try {
@@ -60,8 +60,7 @@ interface PanelProps {
   error?: string;
   /** When viewMode === 'diff', diff the crawler content against this base */
   diffBase?: string | null;
-  isExpanded?: boolean;
-  onExpand?: () => void;
+  diffMode?: "exact" | "smart";
 }
 
 function OutputPanel({
@@ -72,30 +71,18 @@ function OutputPanel({
   warning,
   error,
   diffBase,
-  isExpanded,
-  onExpand,
+  diffMode = "exact",
 }: PanelProps) {
   const [dismissedWarning, setDismissedWarning] = useState<string>();
   const [dismissedError, setDismissedError] = useState<string>();
   const { copiedUrl, triggerCopy } = useCopyLinkToast();
   const linkComponents = makeLinkComponents(triggerCopy);
 
-  const diffChunks = useMemo(() => {
+  const diffResult = useMemo(() => {
     if (viewMode !== "diff" || diffBase == null || markdown == null)
       return null;
-    return diffLines(diffBase, markdown);
-  }, [viewMode, diffBase, markdown]);
-
-  const diffStats = useMemo(() => {
-    if (!diffChunks) return null;
-    let removed = 0;
-    let added = 0;
-    for (const chunk of diffChunks) {
-      if (chunk.removed) removed += chunk.count ?? 0;
-      if (chunk.added) added += chunk.count ?? 0;
-    }
-    return { removed, added };
-  }, [diffChunks]);
+    return compareMarkdowns(diffBase, markdown, diffMode !== "smart");
+  }, [viewMode, diffBase, markdown, diffMode]);
 
   return (
     <div className="flex flex-col flex-1 min-w-0 min-h-0 border rounded-lg overflow-hidden">
@@ -105,39 +92,26 @@ function OutputPanel({
           {title}
         </h3>
         <div className="ml-auto flex items-center gap-2">
-          {diffStats && (
+          {diffResult && (
             <div className="flex items-center gap-1.5">
-              {diffStats.removed > 0 && (
+              {diffResult.removedLines > 0 && (
                 <span className="text-xs font-mono font-medium text-red-600 dark:text-red-400">
-                  −{diffStats.removed}
+                  −{diffResult.removedLines}
                 </span>
               )}
-              {diffStats.added > 0 && (
+              {diffResult.addedLines > 0 && (
                 <span className="text-xs font-mono font-medium text-green-600 dark:text-green-400">
-                  +{diffStats.added}
+                  +{diffResult.addedLines}
                 </span>
               )}
-              {diffStats.removed === 0 && diffStats.added === 0 && (
+              {diffResult.isIdentical && (
                 <span className="text-xs font-medium text-green-600 dark:text-green-400">
                   identical
                 </span>
               )}
             </div>
           )}
-          {onExpand && (
-            <button
-              type="button"
-              onClick={onExpand}
-              aria-label={isExpanded ? "Collapse panel" : "Expand panel"}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isExpanded ? (
-                <Minimize2 className="w-3.5 h-3.5" />
-              ) : (
-                <Maximize2 className="w-3.5 h-3.5" />
-              )}
-            </button>
-          )}
+
         </div>
       </div>
       {warning && warning !== dismissedWarning && (
@@ -170,9 +144,9 @@ function OutputPanel({
       )}
       <div className="flex-1 overflow-y-auto">
         {markdown !== null ? (
-          viewMode === "diff" && diffChunks ? (
+          viewMode === "diff" && diffResult ? (
             <pre className="text-xs font-mono whitespace-pre-wrap break-words p-4 leading-5">
-              {diffChunks.map((chunk, i) => {
+              {diffResult.hunks.map((chunk, i) => {
                 const prefix = chunk.removed ? "-" : chunk.added ? "+" : " ";
                 const cls = chunk.removed
                   ? "bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-300"
@@ -270,7 +244,7 @@ export default function AiCrawlerRenderComparisonClient({
     undefined,
   );
   const [viewMode, setViewMode] = useState<ViewMode>("rendered");
-  const [diffExpanded, setDiffExpanded] = useState(false);
+  const [diffMode, setDiffMode] = useState<"exact" | "smart">("exact");
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -419,7 +393,6 @@ export default function AiCrawlerRenderComparisonClient({
           return;
         }
 
-        setDiffExpanded(false);
         setHumanMarkdown(data.humanMarkdown);
         setCrawlerMarkdown(data.crawlerMarkdown);
         setHumanWarning(data.humanWarning ?? undefined);
@@ -462,7 +435,6 @@ export default function AiCrawlerRenderComparisonClient({
       const full = history.find((e) => e.id === entry.id);
       if (!full) return;
       setActiveId(full.id);
-      setDiffExpanded(false);
       setHumanMarkdown(full.humanMarkdown);
       setCrawlerMarkdown(full.crawlerMarkdown);
       setHumanWarning(full.humanWarning);
@@ -697,11 +669,32 @@ export default function AiCrawlerRenderComparisonClient({
           crawlerError ? (
             <>
               <div className="flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
                 <ViewToggle
                   value={viewMode}
                   onChange={setViewMode}
                   modes={["rendered", "raw", "diff"]}
                 />
+                {viewMode === "diff" && (
+                  <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+                    {(["exact", "smart"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setDiffMode(mode)}
+                        className={cn(
+                          "px-3 py-1 text-xs font-medium rounded-md transition-colors capitalize",
+                          diffMode === mode
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {mode === "exact" ? "Exact" : "Smart"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
                 {activeId && (
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
@@ -718,15 +711,15 @@ export default function AiCrawlerRenderComparisonClient({
               <div className="flex flex-1 gap-3 overflow-hidden min-h-0">
                 <div
                   className={cn(
-                    "flex-1 min-w-0 min-h-0 overflow-hidden",
-                    diffExpanded && "hidden",
+                    "flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden",
+                    viewMode === "diff" && "hidden",
                   )}
                 >
                   <OutputPanel
                     title="Source: Human Experience"
                     icon={<User className="w-3.5 h-3.5" />}
                     markdown={humanMarkdown}
-                    viewMode={viewMode === "diff" ? "raw" : viewMode}
+                    viewMode={viewMode}
                     warning={humanWarning}
                     error={humanError}
                   />
@@ -739,8 +732,7 @@ export default function AiCrawlerRenderComparisonClient({
                   warning={crawlerWarning}
                   error={crawlerError}
                   diffBase={viewMode === "diff" ? humanMarkdown : undefined}
-                  isExpanded={diffExpanded}
-                  onExpand={() => setDiffExpanded((v) => !v)}
+                  diffMode={diffMode}
                 />
               </div>
             </>

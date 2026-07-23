@@ -18,7 +18,6 @@ const videoTagConverter = (ctx: TranslatorContext) => {
     if (!src) {
         src = node.querySelector("source")?.getAttribute("src") ?? "";
     }
-    const title = node.getAttribute("title");
     const poster = node.getAttribute("poster") ?? "";
     if (!src && !poster) {
         return { ignore: true };
@@ -27,14 +26,14 @@ const videoTagConverter = (ctx: TranslatorContext) => {
     if (!src) {
         // No playable source but has a poster image — render as image
         return {
-            content: `[${title || "VideoPoster"}](${poster})`,
+            content: `[VideoPoster](${poster})`,
             surroundingNewlines: 1,
             preserveIfEmpty: false,
         };
     }
 
     return {
-        content: `[${title || "Video"}](${src})`,
+        content: `[Video](${src})`,
         surroundingNewlines: 1,
         preserveIfEmpty: false,
     };

@@ -57,7 +57,7 @@ describe("htmlToMarkdown", () => {
     const result = htmlToMarkdown(
       '<video src="video.mp4" title="Demo"></video>',
     );
-    expect(result).toContain("[Demo](video.mp4)");
+    expect(result).toContain("[Video](video.mp4)");
   });
 
   it("renders a video with poster but no src as a poster link", () => {
