@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import TurndownService from "turndown";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
-import { stripStyleTags } from "@/lib/utils";
+import { stripStyleTags } from "@/lib/html-to-markdown";
 
 const MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
 
