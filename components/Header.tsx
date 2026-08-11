@@ -26,7 +26,7 @@ export function Header() {
             className={cn(
               "px-3 py-1 text-sm rounded-md transition-colors flex items-center gap-1.5",
               pathname === href
-                ? "bg-accent text-accent-foreground font-medium"
+                ? "bg-brand/10 text-brand font-medium"
                 : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
             )}
           >

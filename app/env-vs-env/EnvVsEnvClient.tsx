@@ -433,7 +433,7 @@ export default function EnvVsEnvClient({
               <span className={cn(
                 "text-xs flex items-center gap-1 pb-2",
                 leftRequiresAuth
-                  ? "text-amber-600 dark:text-amber-400"
+                  ? "text-brand"
                   : "text-muted-foreground opacity-40",
               )}>
                 <Lock className="w-3 h-3" />
@@ -485,7 +485,7 @@ export default function EnvVsEnvClient({
               <span className={cn(
                 "text-xs flex items-center gap-1 pb-2",
                 rightRequiresAuth
-                  ? "text-amber-600 dark:text-amber-400"
+                  ? "text-brand"
                   : "text-muted-foreground opacity-40",
               )}>
                 <Lock className="w-3 h-3" />

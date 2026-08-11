@@ -432,7 +432,7 @@ export default function HumanVsBotClient({
 
           {requiresAuth && (
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 mr-1">
+              <span className="text-xs text-brand flex items-center gap-1 mr-1">
                 <Lock className="w-3 h-3" />
                 Credentials
               </span>
