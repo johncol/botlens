@@ -26,8 +26,9 @@ A window opens with a blinking cursor. You type commands here and press **Enter*
 Node.js is the software that runs BotLens. You install it once.
 
 1. Go to [nodejs.org](https://nodejs.org).
-2. Click **Download Node.js (LTS)**.
-3. Open the downloaded file and follow the steps in the installer.
+2. Click **Get Node.js**.
+3. Click on "Copy to clipboard"
+4. Paste it on the terminal and press enter
 
 To check that the installation worked, type this in Terminal and press **Enter**:
 
@@ -42,6 +43,8 @@ The output should start with `v24`.
 ## Step 3: Get the code
 
 In Terminal, run these two commands one at a time:
+
+> If a popup appears asking to install developer tools, click **Install** and wait for it to finish. Then run the command again.
 
 ```
 git clone https://github.com/johncol/botlens
