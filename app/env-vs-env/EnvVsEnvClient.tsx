@@ -298,7 +298,7 @@ export default function EnvVsEnvClient({
   );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Input bar */}
       <div className="border-b px-4 py-3 bg-background shrink-0 space-y-2">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">

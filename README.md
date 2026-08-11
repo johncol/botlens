@@ -4,9 +4,10 @@ A local dev tool for inspecting how AI crawlers see your pages and comparing HTM
 
 ## Tools
 
-- **Human vs Bot** — Compare what a human browser (JS-rendered via Playwright) sees vs what an AI crawler (raw fetch with bot user agent) sees for the same URL. Supports multiple environments and 10 AI crawler user agents including GPTBot and ClaudeBot.
-- **Library Comparison** — Paste a URL or HTML snippet and compare Turndown vs node-html-markdown output side by side.
-- **Page Comparison** — Convert two different HTML sources and diff the markdown results.
+- **Human vs Bot** — Compare what a human sees (full JS-rendered page via Playwright) vs what an AI crawler sees (raw fetch with a bot user agent) for the same URL. Supports multiple environments and 10 AI crawler user agents.
+- **Env vs Env** — Fetch the same page from two different environments (e.g. production vs development) using an AI crawler and compare the markdown output side by side.
+- **Page Comparison** — Convert two different HTML sources with node-html-markdown and compare the results side by side. Useful for diffing a before/after, two versions of a page, or two different sites.
+- **Library Comparison** — Paste a URL or HTML snippet and see the output side by side from two converters: Turndown and node-html-markdown. Useful for evaluating which library produces cleaner markdown for a given source.
 
 ## Running locally
 

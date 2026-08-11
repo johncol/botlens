@@ -2,31 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Hammer, FileText, Bot, GitCompare } from "lucide-react";
+import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const NAV_ITEMS = [
-  {
-    href: "/human-vs-bot",
-    label: "Human vs Bot",
-    icon: Bot,
-  },
-  {
-    href: "/env-vs-env",
-    label: "Env vs Env",
-    icon: GitCompare,
-  },
-  {
-    href: "/markdown-page-comparison",
-    label: "Page Comparison",
-    icon: FileText,
-  },
-  {
-    href: "/markdown-library-comparison",
-    label: "Library Comparison",
-    icon: Hammer,
-  },
-];
+import { TOOLS } from "@/lib/tools";
 
 export function Header() {
   const pathname = usePathname();
@@ -41,7 +19,7 @@ export function Header() {
         BotLens
       </Link>
       <nav className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+        {TOOLS.map(({ href, title, icon: Icon }) => (
           <Link
             key={href}
             href={href}
@@ -53,7 +31,7 @@ export function Header() {
             )}
           >
             <Icon className="size-4" />
-            {label}
+            {title}
           </Link>
         ))}
       </nav>
