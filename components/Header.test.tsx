@@ -37,7 +37,7 @@ describe("Header", () => {
     render(<Header />);
 
     const activeLink = screen.getByRole("link", { name: /env vs env/i });
-    expect(activeLink.className).toMatch(/bg-accent/);
+    expect(activeLink.className).toMatch(/text-brand/);
   });
 
   it("does not apply active styling to non-current links", () => {
@@ -45,6 +45,6 @@ describe("Header", () => {
     render(<Header />);
 
     const inactiveLink = screen.getByRole("link", { name: /human vs bot/i });
-    expect(inactiveLink.className).not.toMatch(/bg-accent[^/]/);
+    expect(inactiveLink.className).not.toMatch(/text-brand[^/]/);
   });
 });
