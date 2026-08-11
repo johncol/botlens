@@ -9,6 +9,10 @@ A local dev tool for inspecting how AI crawlers see your pages and comparing HTM
 - **Page Comparison** — Convert two different HTML sources with node-html-markdown and compare the results side by side. Useful for diffing a before/after, two versions of a page, or two different sites.
 - **Library Comparison** — Paste a URL or HTML snippet and see the output side by side from two converters: Turndown and node-html-markdown. Useful for evaluating which library produces cleaner markdown for a given source.
 
+## Non-technical users
+
+If you are not familiar with the terminal or Node.js, read [README_NON_TECHNICAL.md](README_NON_TECHNICAL.md). It walks you through every step.
+
 ## Running locally
 
 ```bash
