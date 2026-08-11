@@ -74,3 +74,7 @@ those bundled assets into `/tmp`; warm invocations reuse `/tmp/chromium`.
 
 The project pins Node.js 24 in `package.json`, matching the Docker parity image
 and overriding any different Vercel dashboard default.
+
+## Credits
+
+- Favicon by [Streamline](https://www.streamlinehq.com)
