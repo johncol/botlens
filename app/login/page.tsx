@@ -1,40 +1,39 @@
 "use client";
 
 import { Suspense, useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+    // Validate redirect is relative to prevent open redirect attacks.
+    const rawFrom = searchParams.get("from") ?? "/";
+    const from = rawFrom.startsWith("/") && !rawFrom.startsWith("//") ? rawFrom : "/";
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, from }),
+        redirect: "manual",
       });
-      if (res.ok) {
-        const rawFrom = searchParams.get("from") ?? "/";
-        // Validate redirect is relative to prevent open redirect attacks.
-        const from =
-          rawFrom.startsWith("/") && !rawFrom.startsWith("//") ? rawFrom : "/";
-        router.replace(from);
-      } else {
-        const data = await res.json();
-        setError(data.error ?? "Invalid password");
-        setPassword("");
-        inputRef.current?.focus();
+      if (res.type === "opaqueredirect") {
+        window.location.replace(from);
+        return;
       }
+      const data = await res.json();
+      setError(data.error ?? "Invalid password");
+      setPassword("");
+      inputRef.current?.focus();
     } catch {
       setError("Network error — please try again");
     } finally {

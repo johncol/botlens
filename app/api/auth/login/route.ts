@@ -5,7 +5,7 @@ import { GATE_PASSWORD } from "@/lib/config";
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 
 export async function POST(request: NextRequest) {
-  let body: { password?: string };
+  let body: { password?: string; from?: string };
   try {
     body = await request.json();
   } catch {
@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
 
   const gatePassword = GATE_PASSWORD;
   if (!gatePassword) {
-    // No password configured — auth is disabled, always succeed
-    return NextResponse.json({ ok: true });
+    // No password configured — auth is disabled, redirect immediately
+    return NextResponse.redirect(resolveRedirectUrl(body.from, request));
   }
 
   const supplied = body.password ?? "";
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   const token = await deriveToken(gatePassword);
-  const response = NextResponse.json({ ok: true });
+  const response = NextResponse.redirect(resolveRedirectUrl(body.from, request));
   response.cookies.set(AUTH_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -40,4 +40,12 @@ export async function POST(request: NextRequest) {
     path: "/",
   });
   return response;
+}
+
+function resolveRedirectUrl(raw: unknown, request: NextRequest): URL {
+  const path = typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
+  const url = request.nextUrl.clone();
+  url.pathname = path;
+  url.search = "";
+  return url;
 }
