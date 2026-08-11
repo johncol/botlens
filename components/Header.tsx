@@ -12,8 +12,8 @@ const NAV_ITEMS = [
     icon: Bot,
   },
   {
-    href: "/env-comparison",
-    label: "Env Comparison",
+    href: "/env-vs-env",
+    label: "Env vs Env",
     icon: GitCompare,
   },
   {

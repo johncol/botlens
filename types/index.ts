@@ -41,7 +41,7 @@ export type CrawlerComparisonEntry = {
   crawlerError?: string;
 };
 
-export type EnvComparisonEntry = {
+export type EnvVsEnvEntry = {
   id: string;
   createdAt: number;
   /** Production domain used to build both URLs. */

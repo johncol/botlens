@@ -16,7 +16,7 @@ vi.mock("next/link", () => ({
 
 import { usePathname } from "next/navigation";
 
-const NAV_LABELS = ["Human vs Bot", "Env Comparison", "Page Comparison", "Library Comparison"];
+const NAV_LABELS = ["Human vs Bot", "Env vs Env", "Page Comparison", "Library Comparison"];
 
 describe("Header", () => {
   it("renders the BotLens logo linking to /", () => {
@@ -33,15 +33,15 @@ describe("Header", () => {
   });
 
   it("applies active styling to the link matching the current pathname", () => {
-    vi.mocked(usePathname).mockReturnValue("/env-comparison");
+    vi.mocked(usePathname).mockReturnValue("/env-vs-env");
     render(<Header />);
 
-    const activeLink = screen.getByRole("link", { name: /env comparison/i });
+    const activeLink = screen.getByRole("link", { name: /env vs env/i });
     expect(activeLink.className).toMatch(/bg-accent/);
   });
 
   it("does not apply active styling to non-current links", () => {
-    vi.mocked(usePathname).mockReturnValue("/env-comparison");
+    vi.mocked(usePathname).mockReturnValue("/env-vs-env");
     render(<Header />);
 
     const inactiveLink = screen.getByRole("link", { name: /human vs bot/i });

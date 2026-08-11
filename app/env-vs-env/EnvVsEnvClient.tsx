@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { EnvComparisonEntry, SidebarEntry } from "@/types";
+import { EnvVsEnvEntry, SidebarEntry } from "@/types";
 import {
   loadHistory,
   addHistoryEntry,
@@ -28,7 +28,7 @@ const TAG_FILTER_OPTIONS = ["body", "header", "nav", "main", "footer"] as const;
 type TagFilter = (typeof TAG_FILTER_OPTIONS)[number];
 const DEFAULT_TAG_FILTER: TagFilter = "main";
 
-function toSidebarEntry(e: EnvComparisonEntry): SidebarEntry {
+function toSidebarEntry(e: EnvVsEnvEntry): SidebarEntry {
   return {
     id: e.id,
     label: `${e.page} (${e.leftEnvironment} vs ${e.rightEnvironment})`,
@@ -37,18 +37,18 @@ function toSidebarEntry(e: EnvComparisonEntry): SidebarEntry {
   };
 }
 
-interface EnvComparisonClientProps {
+interface EnvVsEnvClientProps {
   initialValues: PageInitialValues;
 }
 
-export default function EnvComparisonClient({
+export default function EnvVsEnvClient({
   initialValues,
-}: EnvComparisonClientProps) {
-  const [history, setHistory] = useState<EnvComparisonEntry[]>([]);
+}: EnvVsEnvClientProps) {
+  const [history, setHistory] = useState<EnvVsEnvEntry[]>([]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHistory(loadHistory<EnvComparisonEntry>(ENV_COMPARISON_KEY));
+    setHistory(loadHistory<EnvVsEnvEntry>(ENV_COMPARISON_KEY));
   }, []);
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -187,7 +187,7 @@ export default function EnvComparisonClient({
       }
 
       try {
-        const res = await fetch("/api/env-comparison", {
+        const res = await fetch("/api/env-vs-env", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -214,7 +214,7 @@ export default function EnvComparisonClient({
         setLeftError(data.leftError ?? undefined);
         setRightError(data.rightError ?? undefined);
 
-        const entry: Omit<EnvComparisonEntry, "id" | "createdAt"> = {
+        const entry: Omit<EnvVsEnvEntry, "id" | "createdAt"> = {
           domain: lockedDomain,
           page: path,
           tagFilter,
@@ -230,7 +230,7 @@ export default function EnvComparisonClient({
         };
 
         setHistory((prev) => {
-          const updated = addHistoryEntry<EnvComparisonEntry>(
+          const updated = addHistoryEntry<EnvVsEnvEntry>(
             ENV_COMPARISON_KEY,
             prev,
             entry,
@@ -280,7 +280,7 @@ export default function EnvComparisonClient({
   const handleRemove = useCallback(
     (id: string) => {
       setHistory((prev) => {
-        const updated = removeHistoryEntry<EnvComparisonEntry>(ENV_COMPARISON_KEY, prev, id);
+        const updated = removeHistoryEntry<EnvVsEnvEntry>(ENV_COMPARISON_KEY, prev, id);
         if (activeId === id) {
           const next = updated[0] ?? null;
           setActiveId(next?.id ?? null);

@@ -10,9 +10,9 @@ const TOOLS = [
       "Compare what a human sees (full JS-rendered page via Playwright) vs what an AI crawler sees (raw fetch with a bot user agent) for the same URL. Supports multiple environments and 10 AI crawler user agents.",
   },
   {
-    href: "/env-comparison",
+    href: "/env-vs-env",
     icon: GitCompare,
-    title: "Env Comparison",
+    title: "Env vs Env",
     description:
       "Fetch the same page from two different environments (e.g. production vs development) using an AI crawler and compare the markdown output side by side. Useful for catching content or structure regressions before shipping.",
   },

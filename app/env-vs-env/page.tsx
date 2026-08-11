@@ -1,9 +1,9 @@
-import EnvComparisonClient from "./EnvComparisonClient";
+import EnvVsEnvClient from "./EnvVsEnvClient";
 import { getPageInitialValues } from "@/lib/page-prefill";
 
-export default function EnvComparisonPage() {
+export default function EnvVsEnvPage() {
   return (
-    <EnvComparisonClient
+    <EnvVsEnvClient
       initialValues={getPageInitialValues(process.env)}
     />
   );
