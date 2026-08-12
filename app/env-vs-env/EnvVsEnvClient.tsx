@@ -66,6 +66,9 @@ export default function EnvVsEnvClient({
 
   const pageInputRef = useRef<HTMLInputElement>(null);
 
+  const [renderedLeftEnv, setRenderedLeftEnv] = useState<Environment | null>(null);
+  const [renderedRightEnv, setRenderedRightEnv] = useState<Environment | null>(null);
+
   const [leftMarkdown, setLeftMarkdown] = useState<string | null>(null);
   const [rightMarkdown, setRightMarkdown] = useState<string | null>(null);
   const [leftWarning, setLeftWarning] = useState<string | undefined>(undefined);
@@ -208,6 +211,8 @@ export default function EnvVsEnvClient({
           return;
         }
 
+        setRenderedLeftEnv(leftEnv);
+        setRenderedRightEnv(rightEnv);
         setLeftMarkdown(data.leftMarkdown);
         setRightMarkdown(data.rightMarkdown);
         setLeftWarning(data.leftWarning ?? undefined);
@@ -264,6 +269,8 @@ export default function EnvVsEnvClient({
       const full = history.find((e) => e.id === entry.id);
       if (!full) return;
       setActiveId(full.id);
+      setRenderedLeftEnv(Object.keys(ENVIRONMENTS).find((k) => ENVIRONMENTS[k as Environment].label === full.leftEnvironment) as Environment ?? "production");
+      setRenderedRightEnv(Object.keys(ENVIRONMENTS).find((k) => ENVIRONMENTS[k as Environment].label === full.rightEnvironment) as Environment ?? "development");
       setLeftMarkdown(full.leftMarkdown);
       setRightMarkdown(full.rightMarkdown);
       setLeftWarning(full.leftWarning);
@@ -285,6 +292,8 @@ export default function EnvVsEnvClient({
         if (activeId === id) {
           const next = updated[0] ?? null;
           setActiveId(next?.id ?? null);
+          setRenderedLeftEnv(next ? (Object.keys(ENVIRONMENTS).find((k) => ENVIRONMENTS[k as Environment].label === next.leftEnvironment) as Environment ?? "production") : null);
+          setRenderedRightEnv(next ? (Object.keys(ENVIRONMENTS).find((k) => ENVIRONMENTS[k as Environment].label === next.rightEnvironment) as Environment ?? "development") : null);
           setLeftMarkdown(next?.leftMarkdown ?? null);
           setRightMarkdown(next?.rightMarkdown ?? null);
           setLeftError(next?.leftError);
@@ -591,7 +600,7 @@ export default function EnvVsEnvClient({
                   )}
                 >
                   <OutputPanel
-                    title={`Left: ${ENVIRONMENTS[leftEnv].label}`}
+                    title={renderedLeftEnv ? `Left: ${ENVIRONMENTS[renderedLeftEnv].label}` : "Left"}
                     icon={<GitCompare className="w-3.5 h-3.5" />}
                     markdown={leftMarkdown}
                     viewMode={viewMode}
@@ -600,7 +609,7 @@ export default function EnvVsEnvClient({
                   />
                 </div>
                 <OutputPanel
-                  title={`Right: ${ENVIRONMENTS[rightEnv].label}`}
+                  title={renderedRightEnv ? `Right: ${ENVIRONMENTS[renderedRightEnv].label}` : "Right"}
                   icon={<GitCompare className="w-3.5 h-3.5" />}
                   markdown={rightMarkdown}
                   viewMode={viewMode}
