@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deriveToken, verifyToken, AUTH_COOKIE } from "@/lib/auth";
 import { GATE_PASSWORD } from "@/lib/config";
+import { safeRedirectPath } from "@/lib/redirect";
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 
@@ -43,9 +44,8 @@ export async function POST(request: NextRequest) {
 }
 
 function resolveRedirectUrl(raw: unknown, request: NextRequest): URL {
-  const path = typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
   const url = request.nextUrl.clone();
-  url.pathname = path;
+  url.pathname = safeRedirectPath(raw);
   url.search = "";
   return url;
 }

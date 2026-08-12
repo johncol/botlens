@@ -4,6 +4,7 @@ import { Suspense, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { safeRedirectPath } from "@/lib/redirect";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -16,9 +17,7 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    // Validate redirect is relative to prevent open redirect attacks.
-    const rawFrom = searchParams.get("from") ?? "/";
-    const from = rawFrom.startsWith("/") && !rawFrom.startsWith("//") ? rawFrom : "/";
+    const from = safeRedirectPath(searchParams.get("from") ?? "/");
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
