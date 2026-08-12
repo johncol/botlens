@@ -104,7 +104,7 @@ To stop the app, click on the Terminal window and press **Control (^) + C**.
 
 ## Optional: Save credentials to avoid typing them each time
 
-BotLens asks you to enter credentials for protected environments (staging, development, UAT) each time you use the Human vs Bot tool. To skip that, you can save credentials in `.env.local`.
+BotLens asks you to enter credentials for protected environments (staging, development, UAT) each time you use the Human vs Bot tool and the Env vs Env tool. To skip that, you can save credentials in `.env.local`.
 
 Open the file:
 

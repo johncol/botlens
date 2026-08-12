@@ -22,10 +22,10 @@ npm run dev
 
 Open [http://localhost:3001](http://localhost:3001).
 
-### Human vs Bot prefills
+### Prefills
 
 Copy `.env.example` to `.env.local` and set any values you want prefilled on
-the Human vs Bot page. These variables are read only during local
+the Human vs Bot and Env vs Env pages. These variables are read only during local
 development and only provide initial values; every input remains editable.
 
 `DOMAIN` accepts a production hostname or URL. `PAGE` accepts a path or full
@@ -35,6 +35,8 @@ environment with `STAGING_USER` / `STAGING_PASSWORD`, `DEVELOPMENT_USER` /
 
 Credential prefills are sent to browser memory so the form can use them. They
 are never persisted to local history and are ignored outside development.
+
+## Only relevant to contributors
 
 ### Vercel runtime parity check
 
@@ -54,9 +56,9 @@ public test page with a representative URL containing a `<main>` element:
 SMOKE_TEST_URL=https://example.com/page npm run test:vercel
 ```
 
-## Deploying to Vercel
+### Deploying to Vercel
 
-### Environment variables
+#### Environment variables
 
 | Variable | Required | Description |
 |---|---|---|
@@ -65,7 +67,7 @@ SMOKE_TEST_URL=https://example.com/page npm run test:vercel
 
 > **Note:** The `VERCEL` environment variable is set automatically by the Vercel platform and does not need to be configured manually.
 
-### How Chromium works on Vercel
+#### How Chromium works on Vercel
 
 `@sparticuz/chromium` remains external to the Next.js bundle so its relative
 file lookup works. `outputFileTracingIncludes` copies its compressed `bin/`
