@@ -25,6 +25,7 @@ import { CrawlerSelect } from "@/components/CrawlerSelect";
 import { OutputPanel } from "@/components/OutputPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PasswordInput } from "@/components/ui/password-input";
 import { AlertTriangle, Loader2, Bot, User, X, Lock } from "lucide-react";
 
 function toSidebarEntry(e: CrawlerComparisonEntry): SidebarEntry {
@@ -446,15 +447,14 @@ export default function HumanVsBotClient({
                 placeholder="Username"
                 className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-40"
               />
-              <input
-                type="password"
+              <PasswordInput
                 autoComplete="current-password"
                 value={currentCreds.password}
                 onChange={(e) =>
                   handleCredentialChange("password", e.target.value)
                 }
                 placeholder="Password"
-                className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-48"
+                className="w-48"
               />
             </div>
           )}

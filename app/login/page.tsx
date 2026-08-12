@@ -3,6 +3,7 @@
 import { Suspense, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Loader2 } from "lucide-react";
 import { safeRedirectPath } from "@/lib/redirect";
 
@@ -51,15 +52,14 @@ function LoginForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input
+          <PasswordInput
             ref={inputRef}
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             autoFocus
             required
-            className="w-full h-9 px-3 text-sm rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="w-full"
           />
           {error && <p className="text-xs text-destructive">{error}</p>}
           <Button type="submit" className="w-full" disabled={isLoading}>

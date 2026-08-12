@@ -22,6 +22,7 @@ import { CrawlerSelect } from "@/components/CrawlerSelect";
 import { OutputPanel } from "@/components/OutputPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PasswordInput } from "@/components/ui/password-input";
 import { AlertTriangle, Loader2, GitCompare, X, Lock } from "lucide-react";
 
 const TAG_FILTER_OPTIONS = ["body", "header", "nav", "main", "footer"] as const;
@@ -450,8 +451,7 @@ export default function EnvVsEnvClient({
                 placeholder="Username"
                 className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-32 disabled:opacity-40 disabled:cursor-not-allowed"
               />
-              <input
-                type="password"
+              <PasswordInput
                 autoComplete="current-password"
                 disabled={!leftRequiresAuth}
                 value={leftCreds.password}
@@ -459,7 +459,7 @@ export default function EnvVsEnvClient({
                   handleCredentialChange(leftEnv, "password", e.target.value)
                 }
                 placeholder="Password"
-                className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-36 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-36"
               />
             </div>
 
@@ -502,8 +502,7 @@ export default function EnvVsEnvClient({
                 placeholder="Username"
                 className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-32 disabled:opacity-40 disabled:cursor-not-allowed"
               />
-              <input
-                type="password"
+              <PasswordInput
                 autoComplete="current-password"
                 disabled={!rightRequiresAuth}
                 value={rightCreds.password}
@@ -511,7 +510,7 @@ export default function EnvVsEnvClient({
                   handleCredentialChange(rightEnv, "password", e.target.value)
                 }
                 placeholder="Password"
-                className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-36 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-36"
               />
             </div>
           </div>
