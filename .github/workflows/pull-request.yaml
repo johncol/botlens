@@ -1,4 +1,4 @@
-name: Code Quality
+name: Code Quality Pull Request
 run-name: pull request #${{ github.event.pull_request.number }}
 
 on:
