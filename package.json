@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:vercel": "docker build --platform linux/amd64 -f Dockerfile.vercel-parity -t botlens-vercel-parity . && docker run --rm --platform linux/amd64 -e SMOKE_TEST_URL botlens-vercel-parity"
