@@ -2,6 +2,8 @@ import { fetchHumanHtml, type Credentials } from "./fetch-human";
 import { fetchCrawlerHtml } from "./fetch-crawler";
 import { htmlToMarkdown } from "./html-to-markdown";
 import { compareMarkdowns, type ComparisonResult } from "./compare-markdowns";
+import { settledError, settledValue } from "./errors";
+import { DEFAULT_TAG_FILTER, emptyContentWarning } from "./tag-filters";
 
 export type { Credentials, ComparisonResult };
 export type { DiffHunk } from "./compare-markdowns";
@@ -53,34 +55,20 @@ export async function runComparison(
     console.error("AI crawler experience fetch failed", crawlerResult.reason);
   }
 
-  const humanMarkdown =
-    humanResult.status === "fulfilled"
-      ? htmlToMarkdown(humanResult.value.html)
-      : null;
-  const crawlerMarkdown =
-    crawlerResult.status === "fulfilled"
-      ? htmlToMarkdown(crawlerResult.value)
-      : null;
+  const humanHtml = settledValue(humanResult);
+  const crawlerHtml = settledValue(crawlerResult);
 
-  const humanWarning =
-    humanResult.status === "fulfilled" ? humanResult.value.warning : undefined;
+  const humanMarkdown = humanHtml === null ? null : htmlToMarkdown(humanHtml.html);
+  const crawlerMarkdown = crawlerHtml === null ? null : htmlToMarkdown(crawlerHtml);
+
+  const humanWarning = humanHtml?.warning;
   const crawlerWarning =
     crawlerMarkdown !== null && !crawlerMarkdown.trim()
-      ? "Crawler received a page with no readable text in <main> — the site likely requires JavaScript to render content. Raw bots see an empty shell."
+      ? emptyContentWarning(DEFAULT_TAG_FILTER)
       : undefined;
 
-  const humanError =
-    humanResult.status === "rejected"
-      ? humanResult.reason instanceof Error
-        ? humanResult.reason.message
-        : "Unknown error"
-      : undefined;
-  const crawlerError =
-    crawlerResult.status === "rejected"
-      ? crawlerResult.reason instanceof Error
-        ? crawlerResult.reason.message
-        : "Unknown error"
-      : undefined;
+  const humanError = settledError(humanResult);
+  const crawlerError = settledError(crawlerResult);
 
   const comparison =
     humanMarkdown !== null && crawlerMarkdown !== null

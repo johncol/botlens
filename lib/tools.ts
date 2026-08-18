@@ -38,3 +38,12 @@ export const TOOLS: Tool[] = [
       "Paste a URL or HTML snippet and see the output side by side from two converters: Turndown and node-html-markdown. Useful for evaluating which library produces cleaner markdown for a given source.",
   },
 ];
+
+/** Looks up a tool by route. Throws when the route is not registered. */
+export function getTool(href: string): Tool {
+  const tool = TOOLS.find((candidate) => candidate.href === href);
+  if (!tool) {
+    throw new Error(`No tool registered for route ${href}`);
+  }
+  return tool;
+}

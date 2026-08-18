@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import type { Credentials } from "./fetch-human";
 import { DEFAULT_MAX_HTML_BYTES } from "@/lib/config";
+import { DEFAULT_TAG_FILTER } from "@/lib/tag-filters";
 
 export type FetchCrawlerOptions = {
   maxHtmlBytes?: number;
@@ -22,7 +23,7 @@ export async function fetchCrawlerHtml(
   options: FetchCrawlerOptions = {},
 ): Promise<string> {
   const maxHtmlBytes = options.maxHtmlBytes ?? DEFAULT_MAX_HTML_BYTES;
-  const tagFilter = options.tagFilter ?? "main";
+  const tagFilter = options.tagFilter ?? DEFAULT_TAG_FILTER;
   const headers: Record<string, string> = {
     "User-Agent": userAgent,
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",

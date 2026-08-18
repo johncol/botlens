@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import TurndownService from "turndown";
 import { NodeHtmlMarkdown } from "node-html-markdown";
-import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
+import { jsonError, readJsonBody, validateFetchableUrl } from "@/lib/api-validation";
 import { stripStyleTags } from "@/lib/html-to-markdown";
-import { IS_VERCEL, MAX_HTML_BYTES } from "@/lib/config";
+import { toErrorMessage } from "@/lib/errors";
+import { MAX_HTML_BYTES } from "@/lib/config";
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -11,43 +12,21 @@ const turndown = new TurndownService({
 });
 
 export async function POST(request: NextRequest) {
-  let body: { url?: string; html?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  const { body, errorResponse } = await readJsonBody<{
+    url?: string;
+    html?: string;
+  }>(request);
+  if (errorResponse) {
+    return errorResponse;
   }
 
   const { url, html: rawHtml } = body;
   let html: string;
 
   if (url) {
-    let parsedUrl: URL;
-    try {
-      parsedUrl = new URL(url);
-    } catch {
-      return NextResponse.json(
-        { error: "Invalid URL format" },
-        { status: 400 },
-      );
-    }
-
-    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-      return NextResponse.json(
-        { error: "Only http:// and https:// URLs are supported" },
-        { status: 400 },
-      );
-    }
-
-    try {
-      if (IS_VERCEL) {
-        await assertNotPrivateUrl(url);
-      }
-    } catch (err) {
-      return NextResponse.json(
-        { error: err instanceof Error ? err.message : "Invalid URL" },
-        { status: 400 },
-      );
+    const invalidUrl = await validateFetchableUrl(url);
+    if (invalidUrl) {
+      return jsonError(invalidUrl);
     }
 
     let response: Response;
@@ -57,37 +36,30 @@ export async function POST(request: NextRequest) {
         signal: AbortSignal.timeout(15000),
       });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Unknown fetch error";
-      return NextResponse.json(
-        { error: `Failed to fetch URL: ${message}` },
-        { status: 502 },
+      return jsonError(
+        `Failed to fetch URL: ${toErrorMessage(err, "Unknown fetch error")}`,
+        502,
       );
     }
 
     if (!response.ok) {
-      return NextResponse.json(
-        {
-          error: `Remote server returned ${response.status} ${response.statusText}`,
-        },
-        { status: 502 },
+      return jsonError(
+        `Remote server returned ${response.status} ${response.statusText}`,
+        502,
       );
     }
 
     html = await response.text();
   } else if (rawHtml && typeof rawHtml === "string") {
     if (Buffer.byteLength(rawHtml, "utf8") > MAX_HTML_BYTES) {
-      return NextResponse.json(
-        { error: `HTML payload too large (max ${MAX_HTML_BYTES} bytes)` },
-        { status: 413 },
+      return jsonError(
+        `HTML payload too large (max ${MAX_HTML_BYTES} bytes)`,
+        413,
       );
     }
     html = rawHtml;
   } else {
-    return NextResponse.json(
-      { error: 'Provide either "url" or "html" in the request body' },
-      { status: 400 },
-    );
+    return jsonError('Provide either "url" or "html" in the request body');
   }
 
   const tdResult = turndown.turndown(html);

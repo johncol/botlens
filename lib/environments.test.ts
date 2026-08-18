@@ -5,6 +5,9 @@ import {
   buildUrl,
   getAvailableEnvironments,
   isValidPort,
+  parseDomainInput,
+  toPathWithQuery,
+  findEnvironmentByLabel,
   ENVIRONMENTS,
   ENVIRONMENT_ORDER,
 } from "./environments";
@@ -169,5 +172,67 @@ describe("ENVIRONMENT_ORDER", () => {
 
   it("lists production first", () => {
     expect(ENVIRONMENT_ORDER[0]).toBe("production");
+  });
+});
+
+describe("parseDomainInput", () => {
+  it("keeps a bare production domain", () => {
+    expect(parseDomainInput("example.com")).toEqual({
+      prodDomain: "example.com",
+      env: "production",
+    });
+  });
+
+  it("extracts the hostname from a pasted URL", () => {
+    expect(parseDomainInput("https://example.com/en/clothing")).toEqual({
+      prodDomain: "example.com",
+      env: "production",
+    });
+  });
+
+  it("detects the environment from a known subdomain", () => {
+    expect(parseDomainInput("staging.example.com")).toEqual({
+      prodDomain: "example.com",
+      env: "staging",
+    });
+  });
+
+  it("detects a multi-part subdomain", () => {
+    expect(parseDomainInput("uat.qa.example.com")).toEqual({
+      prodDomain: "example.com",
+      env: "uat",
+    });
+  });
+
+  it("trims surrounding whitespace", () => {
+    expect(parseDomainInput("  example.com  ").prodDomain).toBe("example.com");
+  });
+});
+
+describe("toPathWithQuery", () => {
+  it("strips the origin from a full URL", () => {
+    expect(toPathWithQuery("https://example.com/en/clothing?a=1#top")).toBe(
+      "/en/clothing?a=1#top",
+    );
+  });
+
+  it("returns a plain path unchanged", () => {
+    expect(toPathWithQuery("/en/clothing")).toBe("/en/clothing");
+  });
+
+  it("returns an empty string unchanged", () => {
+    expect(toPathWithQuery("")).toBe("");
+  });
+});
+
+describe("findEnvironmentByLabel", () => {
+  it("resolves a known label", () => {
+    expect(findEnvironmentByLabel("Development", "production")).toBe(
+      "development",
+    );
+  });
+
+  it("falls back when the label is unknown", () => {
+    expect(findEnvironmentByLabel("Nowhere", "production")).toBe("production");
   });
 });

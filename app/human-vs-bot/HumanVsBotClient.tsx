@@ -1,55 +1,85 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CrawlerComparisonEntry, SidebarEntry } from "@/types";
-import {
-  loadHistory,
-  addHistoryEntry,
-  removeHistoryEntry,
-  CRAWLER_COMPARISON_KEY,
-} from "@/lib/history";
+import { CrawlerComparisonEntry, PanelContent, SidebarEntry } from "@/types";
+import { CRAWLER_COMPARISON_KEY } from "@/lib/history";
 import {
   ENVIRONMENTS,
-  ENVIRONMENT_ORDER,
-  getAvailableEnvironments,
   getHostname,
   buildUrl,
   isValidPort,
+  parseDomainInput,
+  toPathWithQuery,
+  getAvailableEnvironments,
   LOCAL_HOSTNAME,
   MAX_PORT,
   MIN_PORT,
   type Environment,
 } from "@/lib/environments";
+import { EMPTY_PANEL, hasPanelContent } from "@/lib/panels";
 import { cn } from "@/lib/utils";
 import { AI_CRAWLERS, DEFAULT_CRAWLER_ID } from "@/lib/crawlers";
 import type { PageInitialValues } from "@/lib/page-prefill";
-import { HistorySidebar } from "@/components/HistorySidebar";
+import { useHistory } from "@/hooks/use-history";
+import { useJsonRequest } from "@/hooks/use-json-request";
+import {
+  hasCompleteCredentials,
+  useEnvironmentCredentials,
+} from "@/hooks/use-environment-credentials";
+import { ComparisonWorkspace } from "@/components/ComparisonWorkspace";
+import { DiffModeToggle, type DiffMode } from "@/components/DiffModeToggle";
+import { EmptyState } from "@/components/EmptyState";
+import { InlineAlert } from "@/components/InlineAlert";
+import { LoadingButton } from "@/components/LoadingButton";
 import { ViewToggle, type ViewMode } from "@/components/ViewToggle";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { CrawlerSelect } from "@/components/CrawlerSelect";
 import { OutputPanel } from "@/components/OutputPanel";
-import { Button } from "@/components/ui/button";
+import { CredentialFields } from "@/components/form/CredentialFields";
+import { DomainField } from "@/components/form/DomainField";
+import { PageField } from "@/components/form/PageField";
+import { PortField } from "@/components/form/PortField";
 import { Badge } from "@/components/ui/badge";
-import { PasswordInput } from "@/components/ui/password-input";
-import { AlertTriangle, Loader2, Bot, User, X, Lock } from "lucide-react";
+import { Bot, User } from "lucide-react";
 
-function toSidebarEntry(e: CrawlerComparisonEntry): SidebarEntry {
+type ComparisonResponse = {
+  humanMarkdown: string | null;
+  crawlerMarkdown: string | null;
+  humanWarning?: string;
+  crawlerWarning?: string;
+  humanError?: string;
+  crawlerError?: string;
+  resolvedUrl?: string;
+};
+
+function toSidebarEntry(entry: CrawlerComparisonEntry): SidebarEntry {
+  let label = entry.url;
   try {
-    const path = new URL(e.url).pathname;
-    return {
-      id: e.id,
-      label: `${path} (${e.environment})`,
-      badge: e.crawlerLabel,
-      createdAt: e.createdAt,
-    };
+    label = `${new URL(entry.url).pathname} (${entry.environment})`;
   } catch {
-    return {
-      id: e.id,
-      label: e.url,
-      badge: e.crawlerLabel,
-      createdAt: e.createdAt,
-    };
+    /* a malformed stored URL still shows as-is */
   }
+  return {
+    id: entry.id,
+    label,
+    badge: entry.crawlerLabel,
+    createdAt: entry.createdAt,
+  };
+}
+
+function toPanels(entry: CrawlerComparisonEntry | null) {
+  return {
+    human: {
+      markdown: entry?.humanMarkdown ?? null,
+      warning: entry?.humanWarning,
+      error: entry?.humanError,
+    },
+    crawler: {
+      markdown: entry?.crawlerMarkdown ?? null,
+      warning: entry?.crawlerWarning,
+      error: entry?.crawlerError,
+    },
+  };
 }
 
 interface HumanVsBotClientProps {
@@ -61,17 +91,9 @@ export default function HumanVsBotClient({
   initialValues,
   isLocalAvailable,
 }: HumanVsBotClientProps) {
-  const [history, setHistory] = useState<CrawlerComparisonEntry[]>([]);
+  const history = useHistory<CrawlerComparisonEntry>(CRAWLER_COMPARISON_KEY);
+  const { addEntry, removeEntry, findEntry, setActiveId } = history;
 
-  useEffect(() => {
-    /** Necessary to avoid hydration mismatches */
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHistory(loadHistory<CrawlerComparisonEntry>(CRAWLER_COMPARISON_KEY));
-  }, []);
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  // Domain is stored as the raw production hostname the user entered.
-  // null = not yet locked.
   const [domainInput, setDomainInput] = useState(initialValues.domain);
   const [lockedDomain, setLockedDomain] = useState<string | null>(() =>
     initialValues.domain.trim()
@@ -88,31 +110,21 @@ export default function HumanVsBotClient({
   const [localPort, setLocalPort] = useState(initialValues.localPort);
 
   const availableEnvironments = getAvailableEnvironments(isLocalAvailable);
-
   const pageInputRef = useRef<HTMLInputElement>(null);
 
-  const [humanMarkdown, setHumanMarkdown] = useState<string | null>(null);
-  const [crawlerMarkdown, setCrawlerMarkdown] = useState<string | null>(null);
-  const [humanWarning, setHumanWarning] = useState<string | undefined>(
-    undefined,
-  );
-  const [crawlerWarning, setCrawlerWarning] = useState<string | undefined>(
-    undefined,
-  );
-  const [humanError, setHumanError] = useState<string | undefined>(undefined);
-  const [crawlerError, setCrawlerError] = useState<string | undefined>(
-    undefined,
-  );
+  const [panels, setPanels] = useState<{
+    human: PanelContent;
+    crawler: PanelContent;
+  }>({ human: EMPTY_PANEL, crawler: EMPTY_PANEL });
   const [viewMode, setViewMode] = useState<ViewMode>("rendered");
-  const [diffMode, setDiffMode] = useState<"exact" | "smart">("exact");
+  const [diffMode, setDiffMode] = useState<DiffMode>("exact");
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isLoading, error, setError, send } =
+    useJsonRequest<ComparisonResponse>("/api/human-vs-bot", "Comparison failed");
 
-  // Credentials stored per-env in React state only — never persisted anywhere
-  const [envCredentials, setEnvCredentials] = useState<
-    Partial<Record<Environment, { username: string; password: string }>>
-  >(initialValues.credentials);
+  const { getCredentials, updateCredential } = useEnvironmentCredentials(
+    initialValues.credentials,
+  );
 
   // Focus the page input whenever the domain becomes locked
   useEffect(() => {
@@ -121,40 +133,10 @@ export default function HumanVsBotClient({
     }
   }, [lockedDomain]);
 
-  /**
-   * Parse whatever the user typed into the domain field:
-   * - Extract hostname if they pasted a full URL
-   * - Detect env from known subdomain patterns (e.g. staging.example.com → staging)
-   * - Return the production domain and detected env
-   */
-  function parseDomainInput(raw: string): {
-    prodDomain: string;
-    env: Environment;
-  } {
-    let hostname = raw.trim();
-    try {
-      const withScheme = hostname.includes("://")
-        ? hostname
-        : `https://${hostname}`;
-      hostname = new URL(withScheme).hostname;
-    } catch {
-      /* keep as-is */
-    }
-
-    for (const env of ENVIRONMENT_ORDER) {
-      const config = ENVIRONMENTS[env];
-      if (config.kind !== "subdomain") continue;
-      const prefix = `${config.subdomain}.`;
-      if (hostname.startsWith(prefix)) {
-        return { prodDomain: hostname.slice(prefix.length), env };
-      }
-    }
-
-    return { prodDomain: hostname, env: "production" };
-  }
-
   function handleDomainCommit() {
-    if (!domainInput.trim()) return;
+    if (!domainInput.trim()) {
+      return;
+    }
     const { prodDomain, env } = parseDomainInput(domainInput);
     setLockedDomain(prodDomain);
     setEnvironment(env);
@@ -166,52 +148,25 @@ export default function HumanVsBotClient({
     setEnvironment("production");
   }
 
-  function handlePageBlur() {
-    setPageInput((prev) => {
-      try {
-        const parsed = new URL(prev);
-        return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-      } catch {
-        return prev;
-      }
-    });
-  }
-
   const requiresAuth = ENVIRONMENTS[environment].requiresAuth;
   const requiresPort = ENVIRONMENTS[environment].kind === "localhost";
-  const currentCreds = envCredentials[environment] ?? {
-    username: "",
-    password: "",
-  };
+  const currentCredentials = getCredentials(environment);
   const canSubmit =
     !isLoading &&
     lockedDomain !== null &&
     pageInput.trim().length > 0 &&
     (!requiresPort || isValidPort(localPort.trim())) &&
-    (!requiresAuth ||
-      (currentCreds.username.trim().length > 0 &&
-        currentCreds.password.trim().length > 0));
-
-  function handleCredentialChange(
-    field: "username" | "password",
-    value: string,
-  ) {
-    setEnvCredentials((prev) => ({
-      ...prev,
-      [environment]: {
-        ...(prev[environment] ?? { username: "", password: "" }),
-        [field]: value,
-      },
-    }));
-  }
+    (!requiresAuth || hasCompleteCredentials(currentCredentials));
 
   const selectedCrawler =
-    AI_CRAWLERS.find((c) => c.id === crawlerId) ?? AI_CRAWLERS[0];
+    AI_CRAWLERS.find((crawler) => crawler.id === crawlerId) ?? AI_CRAWLERS[0];
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!lockedDomain || !pageInput.trim()) return;
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!lockedDomain || !pageInput.trim()) {
+        return;
+      }
 
       const trimmedPort = localPort.trim();
       if (
@@ -222,100 +177,75 @@ export default function HumanVsBotClient({
         return;
       }
 
-      // Strip domain if user pasted a full URL into the page field
-      let path = pageInput.trim();
-      try {
-        const parsed = new URL(path);
-        path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-        setPageInput(path);
-      } catch {
-        /* keep as-is */
-      }
+      const path = toPathWithQuery(pageInput.trim());
+      setPageInput(path);
 
       const fullUrl = buildUrl(lockedDomain, path, environment, {
         localPort: trimmedPort,
       });
+      const credentials = getCredentials(environment);
 
-      const requiresAuth = ENVIRONMENTS[environment].requiresAuth;
-      const currentCreds = envCredentials[environment] ?? {
-        username: "",
-        password: "",
-      };
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const res = await fetch("/api/human-vs-bot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: fullUrl,
-            environment,
-            crawlerUserAgent: selectedCrawler.userAgent,
-            ...(requiresAuth && {
-              username: currentCreds.username,
-              password: currentCreds.password,
-            }),
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error ?? "Comparison failed");
-          return;
-        }
-
-        setHumanMarkdown(data.humanMarkdown);
-        setCrawlerMarkdown(data.crawlerMarkdown);
-        setHumanWarning(data.humanWarning ?? undefined);
-        setCrawlerWarning(data.crawlerWarning ?? undefined);
-        setHumanError(data.humanError ?? undefined);
-        setCrawlerError(data.crawlerError ?? undefined);
-
-        const entry: Omit<CrawlerComparisonEntry, "id" | "createdAt"> = {
-          url: data.resolvedUrl ?? fullUrl,
-          environment: ENVIRONMENTS[environment].label,
-          crawlerLabel: selectedCrawler.label,
-          humanMarkdown: data.humanMarkdown,
-          crawlerMarkdown: data.crawlerMarkdown,
-          humanWarning: data.humanWarning,
-          crawlerWarning: data.crawlerWarning,
-          humanError: data.humanError,
-          crawlerError: data.crawlerError,
-        };
-
-        setHistory((prev) => {
-          const updated = addHistoryEntry<CrawlerComparisonEntry>(
-            CRAWLER_COMPARISON_KEY,
-            prev,
-            entry,
-          );
-          setActiveId(updated[0].id);
-          return updated;
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Network error");
-      } finally {
-        setIsLoading(false);
+      const data = await send({
+        url: fullUrl,
+        environment,
+        crawlerUserAgent: selectedCrawler.userAgent,
+        ...(ENVIRONMENTS[environment].requiresAuth && {
+          username: credentials.username,
+          password: credentials.password,
+        }),
+      });
+      if (!data) {
+        return;
       }
+
+      setPanels({
+        human: {
+          markdown: data.humanMarkdown,
+          warning: data.humanWarning,
+          error: data.humanError,
+        },
+        crawler: {
+          markdown: data.crawlerMarkdown,
+          warning: data.crawlerWarning,
+          error: data.crawlerError,
+        },
+      });
+
+      addEntry({
+        url: data.resolvedUrl ?? fullUrl,
+        environment: ENVIRONMENTS[environment].label,
+        crawlerLabel: selectedCrawler.label,
+        humanMarkdown: data.humanMarkdown,
+        crawlerMarkdown: data.crawlerMarkdown,
+        humanWarning: data.humanWarning,
+        crawlerWarning: data.crawlerWarning,
+        humanError: data.humanError,
+        crawlerError: data.crawlerError,
+      });
     },
-    [lockedDomain, pageInput, environment, localPort, selectedCrawler, envCredentials],
+    [
+      lockedDomain,
+      pageInput,
+      environment,
+      localPort,
+      selectedCrawler,
+      getCredentials,
+      send,
+      setError,
+      addEntry,
+    ],
   );
 
   const handleSelect = useCallback(
     (entry: SidebarEntry) => {
-      const full = history.find((e) => e.id === entry.id);
-      if (!full) return;
+      const full = findEntry(entry.id);
+      if (!full) {
+        return;
+      }
       setActiveId(full.id);
-      setHumanMarkdown(full.humanMarkdown);
-      setCrawlerMarkdown(full.crawlerMarkdown);
-      setHumanWarning(full.humanWarning);
-      setCrawlerWarning(full.crawlerWarning);
-      setHumanError(full.humanError);
-      setCrawlerError(full.crawlerError);
+      setPanels(toPanels(full));
 
-      // Restore domain + page from stored URL
+      // Restore domain + page from the stored URL
       try {
         const parsed = new URL(full.url);
         // A localhost URL carries no production domain, so the locked one stays.
@@ -333,32 +263,18 @@ export default function HumanVsBotClient({
       }
       setError(null);
     },
-    [history],
+    [findEntry, setActiveId, setError],
   );
 
   const handleRemove = useCallback(
     (id: string) => {
-      setHistory((prev) => {
-        const updated = removeHistoryEntry<CrawlerComparisonEntry>(
-          CRAWLER_COMPARISON_KEY,
-          prev,
-          id,
-        );
-        if (activeId === id) {
-          const next = updated[0] ?? null;
-          setActiveId(next?.id ?? null);
-          setHumanMarkdown(next?.humanMarkdown ?? null);
-          setCrawlerMarkdown(next?.crawlerMarkdown ?? null);
-          setHumanError(next?.humanError);
-          setCrawlerError(next?.crawlerError);
-          setHumanWarning(next?.humanWarning);
-          setCrawlerWarning(next?.crawlerWarning);
-        }
-        return updated;
-      });
+      removeEntry(id, (next) => setPanels(toPanels(next)));
     },
-    [activeId],
+    [removeEntry],
   );
+
+  const showResults =
+    hasPanelContent(panels.human) || hasPanelContent(panels.crawler);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -366,77 +282,26 @@ export default function HumanVsBotClient({
       <div className="border-b px-4 py-3 bg-background shrink-0 space-y-2">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2 items-end">
-            {/* Domain */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-muted-foreground font-medium">
-                Domain
-              </label>
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  value={
-                    lockedDomain !== null
-                      ? getHostname(lockedDomain, environment, {
-                          localPort: localPort.trim(),
-                        })
-                      : domainInput
-                  }
-                  onChange={(e) => {
-                    if (lockedDomain !== null) return;
-                    setDomainInput(e.target.value);
-                  }}
-                  onBlur={() => {
-                    if (lockedDomain === null) handleDomainCommit();
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (lockedDomain === null) handleDomainCommit();
-                    }
-                  }}
-                  readOnly={lockedDomain !== null}
-                  placeholder="example.com"
-                  required
-                  className={cn(
-                    "h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    lockedDomain !== null &&
-                      "pr-8 bg-muted text-muted-foreground cursor-default select-none",
-                  )}
-                />
-                {lockedDomain !== null && (
-                  <button
-                    type="button"
-                    onClick={handleDomainClear}
-                    aria-label="Clear domain"
-                    className="absolute right-2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
+            <DomainField
+              value={
+                lockedDomain !== null
+                  ? getHostname(lockedDomain, environment, {
+                      localPort: localPort.trim(),
+                    })
+                  : domainInput
+              }
+              isLocked={lockedDomain !== null}
+              onChange={setDomainInput}
+              onCommit={handleDomainCommit}
+              onClear={handleDomainClear}
+            />
 
-            {/* Page */}
-            <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
-              <label className="text-xs text-muted-foreground font-medium">
-                Page
-              </label>
-              <input
-                ref={pageInputRef}
-                type="text"
-                value={pageInput}
-                onChange={(e) => setPageInput(e.target.value)}
-                onBlur={handlePageBlur}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handlePageBlur();
-                }}
-                placeholder="/en/clothing"
-                required
-                className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-            </div>
+            <PageField
+              value={pageInput}
+              onChange={setPageInput}
+              inputRef={pageInputRef}
+            />
 
-            {/* Environment */}
             <EnvironmentSelect
               value={environment}
               onChange={setEnvironment}
@@ -445,69 +310,34 @@ export default function HumanVsBotClient({
             />
 
             {requiresPort && (
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="local-port"
-                  className="text-xs text-muted-foreground font-medium"
-                >
-                  Port
-                </label>
-                <input
-                  id="local-port"
-                  type="text"
-                  inputMode="numeric"
-                  value={localPort}
-                  onChange={(e) => setLocalPort(e.target.value)}
-                  placeholder="3000"
-                  required
-                  className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-24"
-                />
-              </div>
+              <PortField
+                id="local-port"
+                value={localPort}
+                onChange={setLocalPort}
+              />
             )}
 
-            {/* AI Crawler */}
             <CrawlerSelect value={crawlerId} onChange={setCrawlerId} />
 
-            <Button
+            <LoadingButton
               type="submit"
               disabled={!canSubmit}
+              isLoading={isLoading}
+              loadingLabel="Comparing…"
               className="h-9 shrink-0 self-end"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                  Comparing…
-                </>
-              ) : (
-                "Compare"
-              )}
-            </Button>
+              Compare
+            </LoadingButton>
           </div>
 
           {requiresAuth && (
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-xs text-brand flex items-center gap-1 mr-1">
-                <Lock className="w-3 h-3" />
-                Credentials
-              </span>
-              <input
-                type="text"
-                autoComplete="username"
-                value={currentCreds.username}
-                onChange={(e) =>
-                  handleCredentialChange("username", e.target.value)
+              <CredentialFields
+                credentials={currentCredentials}
+                onChange={(field, value) =>
+                  updateCredential(environment, field, value)
                 }
-                placeholder="Username"
-                className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-40"
-              />
-              <PasswordInput
-                autoComplete="current-password"
-                value={currentCreds.password}
-                onChange={(e) =>
-                  handleCredentialChange("password", e.target.value)
-                }
-                placeholder="Password"
-                className="w-48"
+                labelClassName="mr-1"
               />
             </div>
           )}
@@ -520,30 +350,19 @@ export default function HumanVsBotClient({
           </p>
         )}
 
-        {error && (
-          <div className="flex items-center gap-1.5 text-xs text-destructive">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            {error}
-          </div>
-        )}
+        {error && <InlineAlert tone="error">{error}</InlineAlert>}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <HistorySidebar
-          entries={history.map(toSidebarEntry)}
-          activeId={activeId}
-          emptyMessage="No comparisons yet. Submit a URL above."
-          onSelect={handleSelect}
-          onRemove={handleRemove}
-        />
-
-        <main className="flex flex-col flex-1 overflow-hidden p-4 gap-3">
-          {humanMarkdown !== null ||
-          crawlerMarkdown !== null ||
-          humanError ||
-          crawlerError ? (
-            <>
-              <div className="flex items-center justify-between shrink-0">
+      <ComparisonWorkspace
+        entries={history.entries.map(toSidebarEntry)}
+        activeId={history.activeId}
+        emptyMessage="No comparisons yet. Submit a URL above."
+        onSelect={handleSelect}
+        onRemove={handleRemove}
+      >
+        {showResults ? (
+          <>
+            <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <ViewToggle
                   value={viewMode}
@@ -551,83 +370,62 @@ export default function HumanVsBotClient({
                   modes={["rendered", "raw", "diff"]}
                 />
                 {viewMode === "diff" && (
-                  <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
-                    {(["exact", "smart"] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setDiffMode(mode)}
-                        className={cn(
-                          "px-3 py-1 text-xs font-medium rounded-md transition-colors capitalize",
-                          diffMode === mode
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {mode === "exact" ? "Exact" : "Smart"}
-                      </button>
-                    ))}
-                  </div>
+                  <DiffModeToggle value={diffMode} onChange={setDiffMode} />
                 )}
               </div>
-                {activeId && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {history.find((e) => e.id === activeId)?.environment ??
-                        ""}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                      {history.find((e) => e.id === activeId)?.crawlerLabel ??
-                        ""}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-1 gap-3 overflow-hidden min-h-0">
-                <div
-                  className={cn(
-                    "flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden",
-                    viewMode === "diff" && "hidden",
-                  )}
-                >
-                  <OutputPanel
-                    title="Source: Human Experience"
-                    icon={<User className="w-3.5 h-3.5" />}
-                    markdown={humanMarkdown}
-                    viewMode={viewMode}
-                    warning={humanWarning}
-                    error={humanError}
-                  />
+              {history.activeEntry && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {history.activeEntry.environment}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                    {history.activeEntry.crawlerLabel}
+                  </span>
                 </div>
+              )}
+            </div>
+            <div className="flex flex-1 gap-3 overflow-hidden min-h-0">
+              <div
+                className={cn(
+                  "flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden",
+                  viewMode === "diff" && "hidden",
+                )}
+              >
                 <OutputPanel
-                  title="Source: AI Crawler Experience"
-                  icon={<Bot className="w-3.5 h-3.5" />}
-                  markdown={crawlerMarkdown}
+                  title="Source: Human Experience"
+                  icon={<User className="w-3.5 h-3.5" />}
+                  markdown={panels.human.markdown}
                   viewMode={viewMode}
-                  warning={crawlerWarning}
-                  error={crawlerError}
-                  diffBase={viewMode === "diff" ? humanMarkdown : undefined}
-                  diffMode={diffMode}
+                  warning={panels.human.warning}
+                  error={panels.human.error}
                 />
               </div>
-            </>
-          ) : (
-            <div className="flex flex-1 items-center justify-center text-center">
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-sm">
-                  Enter a URL and click Compare.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Left panel uses Playwright (full JS render + scroll).
-                  <br />
-                  Right panel uses a direct fetch with the selected AI crawler
-                  user agent.
-                </p>
-              </div>
+              <OutputPanel
+                title="Source: AI Crawler Experience"
+                icon={<Bot className="w-3.5 h-3.5" />}
+                markdown={panels.crawler.markdown}
+                viewMode={viewMode}
+                warning={panels.crawler.warning}
+                error={panels.crawler.error}
+                diffBase={viewMode === "diff" ? panels.human.markdown : undefined}
+                diffMode={diffMode}
+              />
             </div>
-          )}
-        </main>
-      </div>
+          </>
+        ) : (
+          <EmptyState
+            message="Enter a URL and click Compare."
+            hint={
+              <>
+                Left panel uses Playwright (full JS render + scroll).
+                <br />
+                Right panel uses a direct fetch with the selected AI crawler user
+                agent.
+              </>
+            }
+          />
+        )}
+      </ComparisonWorkspace>
     </div>
   );
 }

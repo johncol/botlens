@@ -1,24 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import {
-  useCopyLinkToast,
-  CopyLinkToast,
-  makeLinkComponents,
-} from "@/components/MarkdownLinkCopy";
-import { Button } from "@/components/ui/button";
+import { InlineAlert } from "@/components/InlineAlert";
+import { LoadingButton } from "@/components/LoadingButton";
+import { MarkdownView } from "@/components/MarkdownView";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  AlertTriangle,
-  Loader2,
-  Link as LinkIcon,
-  FileCode,
-  Pencil,
-} from "lucide-react";
+import { Link as LinkIcon, FileCode, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SIZE_WARNING_BYTES } from "@/lib/constants";
+import { useJsonRequest } from "@/hooks/use-json-request";
+import type { ViewMode } from "@/components/ViewToggle";
 
 interface PageSidePanelProps {
   placeholder: string;
@@ -26,7 +17,7 @@ interface PageSidePanelProps {
   onLabelChange: (label: string) => void;
   markdown: string | null;
   onConvertSuccess: (markdown: string, autoLabel: string) => void;
-  viewMode: import("@/components/ViewToggle").ViewMode;
+  viewMode: ViewMode;
 }
 
 export function PageSidePanel({
@@ -40,55 +31,39 @@ export function PageSidePanel({
   const [inputMode, setInputMode] = useState<"url" | "html">("url");
   const [urlValue, setUrlValue] = useState("");
   const [htmlValue, setHtmlValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState(false);
-  const { copiedUrl, triggerCopy } = useCopyLinkToast();
-  const linkComponents = makeLinkComponents(triggerCopy);
+  const { isLoading, error, send } = useJsonRequest<{
+    nodeHtmlMarkdown: string;
+  }>("/api/convert", "Conversion failed");
 
   const htmlBytes = new TextEncoder().encode(htmlValue).length;
   const showSizeWarning =
     inputMode === "html" && htmlBytes > SIZE_WARNING_BYTES;
 
-  async function handleConvert(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+  async function handleConvert(event: React.FormEvent) {
+    event.preventDefault();
 
+    const payload =
+      inputMode === "url"
+        ? { url: urlValue.trim() }
+        : { html: htmlValue.trim() };
+
+    const data = await send(payload);
+    if (!data) {
+      return;
+    }
+
+    onConvertSuccess(data.nodeHtmlMarkdown, buildAutoLabel());
+  }
+
+  function buildAutoLabel(): string {
+    if (inputMode !== "url") {
+      return `Snippet — ${new Date().toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
+    }
     try {
-      const body =
-        inputMode === "url"
-          ? { url: urlValue.trim() }
-          : { html: htmlValue.trim() };
-
-      const res = await fetch("/api/convert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Conversion failed");
-        return;
-      }
-
-      let autoLabel: string;
-      if (inputMode === "url") {
-        try {
-          autoLabel = new URL(urlValue.trim()).hostname;
-        } catch {
-          autoLabel = urlValue.trim();
-        }
-      } else {
-        autoLabel = `Snippet — ${new Date().toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`;
-      }
-
-      onConvertSuccess(data.nodeHtmlMarkdown as string, autoLabel);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error");
-    } finally {
-      setIsLoading(false);
+      return new URL(urlValue.trim()).hostname;
+    } catch {
+      return urlValue.trim();
     }
   }
 
@@ -167,31 +142,25 @@ export function PageSidePanel({
               className="flex-1 min-h-[60px] max-h-[160px] text-xs font-mono resize-y"
             />
           )}
-          <Button
+          <LoadingButton
             type="submit"
             size="sm"
-            disabled={isLoading}
+            isLoading={isLoading}
             className="h-8 shrink-0 text-xs"
           >
-            {isLoading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              "Convert"
-            )}
-          </Button>
+            Convert
+          </LoadingButton>
         </form>
 
         {showSizeWarning && (
-          <p className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
-            <AlertTriangle className="w-3 h-3 shrink-0" />
+          <InlineAlert tone="warning" className="text-[11px]">
             Large input ({(htmlBytes / 1024).toFixed(0)} KB) — may be slow.
-          </p>
+          </InlineAlert>
         )}
         {error && (
-          <p className="flex items-center gap-1 text-[11px] text-destructive">
-            <AlertTriangle className="w-3 h-3 shrink-0" />
+          <InlineAlert tone="error" className="text-[11px]">
             {error}
-          </p>
+          </InlineAlert>
         )}
       </div>
 
@@ -199,18 +168,7 @@ export function PageSidePanel({
       <div className="flex-1 overflow-y-auto">
         {markdown !== null ? (
           <div className="p-4">
-            {viewMode === "rendered" ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={linkComponents}>
-                  {markdown}
-                </ReactMarkdown>
-                <CopyLinkToast url={copiedUrl} />
-              </div>
-            ) : (
-              <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">
-                {markdown}
-              </pre>
-            )}
+            <MarkdownView markdown={markdown} viewMode={viewMode} />
           </div>
         ) : (
           <div className="flex items-center justify-center h-full min-h-[120px] text-muted-foreground text-xs">

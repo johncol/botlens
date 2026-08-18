@@ -126,3 +126,61 @@ export function buildUrl(
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${scheme}://${hostname}${normalizedPath}`;
 }
+
+export type ParsedDomainInput = {
+  prodDomain: string;
+  env: Environment;
+};
+
+/**
+ * Interprets whatever the user typed into a domain field:
+ * - Extracts the hostname when a full URL was pasted
+ * - Detects the environment from a known subdomain (e.g. `staging.example.com`)
+ *
+ * Returns the production domain plus the detected environment.
+ */
+export function parseDomainInput(raw: string): ParsedDomainInput {
+  let hostname = raw.trim();
+  try {
+    const withScheme = hostname.includes("://") ? hostname : `https://${hostname}`;
+    hostname = new URL(withScheme).hostname;
+  } catch {
+    /* not a URL — keep the raw value */
+  }
+
+  for (const env of ENVIRONMENT_ORDER) {
+    const config = ENVIRONMENTS[env];
+    if (config.kind !== "subdomain") {
+      continue;
+    }
+    const prefix = `${config.subdomain}.`;
+    if (hostname.startsWith(prefix)) {
+      return { prodDomain: hostname.slice(prefix.length), env };
+    }
+  }
+
+  return { prodDomain: hostname, env: "production" };
+}
+
+/**
+ * Strips the origin when a full URL was pasted into a page field, so only the
+ * path, query, and hash remain. Non-URL values pass through unchanged.
+ */
+export function toPathWithQuery(value: string): string {
+  try {
+    const parsed = new URL(value);
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return value;
+  }
+}
+
+/** Resolves a stored environment label (e.g. "Production") back to its key. */
+export function findEnvironmentByLabel(
+  label: string,
+  fallback: Environment,
+): Environment {
+  return (
+    ENVIRONMENT_ORDER.find((env) => ENVIRONMENTS[env].label === label) ?? fallback
+  );
+}

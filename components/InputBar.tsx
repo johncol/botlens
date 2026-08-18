@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { InlineAlert } from "@/components/InlineAlert";
+import { LoadingButton } from "@/components/LoadingButton";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Loader2, Link, FileCode } from "lucide-react";
+import { FIELD_INPUT_CLASS } from "@/components/form/field-styles";
+import { Link, FileCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SIZE_WARNING_BYTES } from "@/lib/constants";
 
@@ -88,7 +90,7 @@ export function InputBar({ onConvert, isLoading, error }: InputBarProps) {
             onChange={(e) => setUrlValue(e.target.value)}
             placeholder="https://example.com"
             required
-            className="flex-1 h-9 px-3 text-sm rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={cn(FIELD_INPUT_CLASS, "flex-1 ring-offset-background")}
           />
         ) : (
           <Textarea
@@ -99,32 +101,24 @@ export function InputBar({ onConvert, isLoading, error }: InputBarProps) {
             className="flex-1 min-h-[80px] max-h-[200px] text-sm font-mono resize-y"
           />
         )}
-        <Button type="submit" disabled={isLoading} className="h-9 shrink-0">
-          {isLoading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-              Converting…
-            </>
-          ) : (
-            "Convert"
-          )}
-        </Button>
+        <LoadingButton
+          type="submit"
+          isLoading={isLoading}
+          loadingLabel="Converting…"
+          className="h-9 shrink-0"
+        >
+          Convert
+        </LoadingButton>
       </form>
 
       {/* Warnings / errors */}
       {showSizeWarning && (
-        <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <InlineAlert tone="warning">
           Large input ({(htmlBytes / 1024).toFixed(0)} KB) — conversion may be
           slow.
-        </div>
+        </InlineAlert>
       )}
-      {error && (
-        <div className="flex items-center gap-1.5 text-xs text-destructive">
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-          {error}
-        </div>
-      )}
+      {error && <InlineAlert tone="error">{error}</InlineAlert>}
     </div>
   );
 }

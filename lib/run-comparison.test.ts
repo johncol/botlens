@@ -21,10 +21,18 @@ vi.mock("./compare-markdowns", () => ({
   })),
 }));
 
-import { runComparison } from "./run-comparison";
+import { runComparison, type RunComparisonOptions } from "./run-comparison";
 import { fetchHumanHtml } from "./fetch-human";
 import { fetchCrawlerHtml } from "./fetch-crawler";
 import { htmlToMarkdown } from "./html-to-markdown";
+
+const baseOptions: RunComparisonOptions = {
+  url: "https://example.com",
+  crawlerUserAgent: "Bot/1.0",
+  scrollMax: 5,
+  pageTimeoutMs: 30_000,
+  maxHtmlBytes: 1024 * 1024,
+};
 
 // ---------------------------------------------------------------------------
 // tests
@@ -43,10 +51,7 @@ describe("runComparison", () => {
   });
 
   it("returns both markdowns and resolvedUrl on success", async () => {
-    const result = await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
-    });
+    const result = await runComparison({ ...baseOptions });
 
     expect(result.humanMarkdown).toBe("md:<p>Human</p>");
     expect(result.crawlerMarkdown).toBe("md:<p>Crawler</p>");
@@ -56,10 +61,7 @@ describe("runComparison", () => {
   });
 
   it("includes a comparison result when both fetches succeed", async () => {
-    const result = await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
-    });
+    const result = await runComparison({ ...baseOptions });
 
     expect(result.comparison).not.toBeNull();
     expect(result.comparison?.isIdentical).toBe(true);
@@ -68,10 +70,7 @@ describe("runComparison", () => {
   it("returns humanError and null humanMarkdown when human fetch fails", async () => {
     vi.mocked(fetchHumanHtml).mockRejectedValue(new Error("Browser crashed"));
 
-    const result = await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
-    });
+    const result = await runComparison({ ...baseOptions });
 
     expect(result.humanMarkdown).toBeNull();
     expect(result.humanError).toBe("Browser crashed");
@@ -81,10 +80,7 @@ describe("runComparison", () => {
   it("returns crawlerError and null crawlerMarkdown when crawler fetch fails", async () => {
     vi.mocked(fetchCrawlerHtml).mockRejectedValue(new Error("403 Forbidden"));
 
-    const result = await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
-    });
+    const result = await runComparison({ ...baseOptions });
 
     expect(result.crawlerMarkdown).toBeNull();
     expect(result.crawlerError).toBe("403 Forbidden");
@@ -96,10 +92,7 @@ describe("runComparison", () => {
       .mockReturnValueOnce("md:human") // human call
       .mockReturnValueOnce("   "); // crawler call — whitespace only
 
-    const result = await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
-    });
+    const result = await runComparison({ ...baseOptions });
 
     expect(result.crawlerWarning).toMatch(/requires JavaScript/);
   });
@@ -110,10 +103,7 @@ describe("runComparison", () => {
       warning: "Network did not reach idle state",
     });
 
-    const result = await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
-    });
+    const result = await runComparison({ ...baseOptions });
 
     expect(result.humanWarning).toBe("Network did not reach idle state");
   });
@@ -121,11 +111,7 @@ describe("runComparison", () => {
   it("passes credentials to both fetchers", async () => {
     const credentials = { username: "u", password: "p" };
 
-    await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
-      credentials,
-    });
+    await runComparison({ ...baseOptions, credentials });
 
     expect(vi.mocked(fetchHumanHtml)).toHaveBeenCalledWith(
       "https://example.com",
@@ -142,8 +128,7 @@ describe("runComparison", () => {
 
   it("passes tunable options to the human fetcher", async () => {
     await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
+      ...baseOptions,
       scrollMax: 3,
       pageTimeoutMs: 20_000,
     });
@@ -157,8 +142,7 @@ describe("runComparison", () => {
 
   it("passes maxHtmlBytes to the crawler fetcher", async () => {
     await runComparison({
-      url: "https://example.com",
-      crawlerUserAgent: "Bot/1.0",
+      ...baseOptions,
       maxHtmlBytes: 512 * 1024,
     });
 

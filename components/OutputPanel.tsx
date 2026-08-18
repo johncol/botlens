@@ -1,15 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { AlertTriangle, X } from "lucide-react";
 import { compareMarkdowns } from "@/lib/compare-markdowns";
-import {
-  useCopyLinkToast,
-  CopyLinkToast,
-  makeLinkComponents,
-} from "@/components/MarkdownLinkCopy";
+import { MarkdownView } from "@/components/MarkdownView";
+import type { DiffMode } from "@/components/DiffModeToggle";
 import type { ViewMode } from "@/components/ViewToggle";
 
 export interface OutputPanelProps {
@@ -21,7 +16,7 @@ export interface OutputPanelProps {
   error?: string;
   /** When viewMode === 'diff', diff the content against this base */
   diffBase?: string | null;
-  diffMode?: "exact" | "smart";
+  diffMode?: DiffMode;
 }
 
 export function OutputPanel({
@@ -36,8 +31,6 @@ export function OutputPanel({
 }: OutputPanelProps) {
   const [dismissedWarning, setDismissedWarning] = useState<string>();
   const [dismissedError, setDismissedError] = useState<string>();
-  const { copiedUrl, triggerCopy } = useCopyLinkToast();
-  const linkComponents = makeLinkComponents(triggerCopy);
 
   const diffResult = useMemo(() => {
     if (viewMode !== "diff" || diffBase == null || markdown == null)
@@ -124,18 +117,7 @@ export function OutputPanel({
             </pre>
           ) : markdown.trim() ? (
             <div className="p-4">
-              {viewMode === "rendered" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={linkComponents}>
-                    {markdown}
-                  </ReactMarkdown>
-                  <CopyLinkToast url={copiedUrl} />
-                </div>
-              ) : (
-                <pre className="text-xs font-mono whitespace-pre-wrap break-words text-foreground">
-                  {markdown}
-                </pre>
-              )}
+              <MarkdownView markdown={markdown} viewMode={viewMode} />
             </div>
           ) : (
             <div className="flex items-center justify-center h-full min-h-[120px] text-muted-foreground text-xs px-4 text-center">

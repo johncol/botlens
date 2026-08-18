@@ -27,6 +27,13 @@ export type SidebarEntry = {
   createdAt: number;
 };
 
+/** One side of a side-by-side comparison. */
+export type PanelContent = {
+  markdown: string | null;
+  warning?: string;
+  error?: string;
+};
+
 export type CrawlerComparisonEntry = {
   id: string;
   createdAt: number;
