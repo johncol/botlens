@@ -26,4 +26,3 @@ export const PAGE_TIMEOUT_MS = parseEnvInt("PAGE_TIMEOUT_MS", DEFAULT_PAGE_TIMEO
 export const GATE_PASSWORD: string | undefined = process.env.GATE_PASSWORD;
 export const PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: string | undefined = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
 export const IS_VERCEL: boolean = Boolean(process.env.VERCEL);
-export const IS_LOCAL: boolean = !IS_VERCEL;

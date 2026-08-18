@@ -11,8 +11,13 @@ import {
 import {
   ENVIRONMENTS,
   ENVIRONMENT_ORDER,
+  getAvailableEnvironments,
   getHostname,
   buildUrl,
+  isValidPort,
+  LOCAL_HOSTNAME,
+  MAX_PORT,
+  MIN_PORT,
   type Environment,
 } from "@/lib/environments";
 import { cn } from "@/lib/utils";
@@ -49,10 +54,12 @@ function toSidebarEntry(e: CrawlerComparisonEntry): SidebarEntry {
 
 interface HumanVsBotClientProps {
   initialValues: PageInitialValues;
+  isLocalAvailable: boolean;
 }
 
 export default function HumanVsBotClient({
   initialValues,
+  isLocalAvailable,
 }: HumanVsBotClientProps) {
   const [history, setHistory] = useState<CrawlerComparisonEntry[]>([]);
 
@@ -78,6 +85,9 @@ export default function HumanVsBotClient({
       : "production",
   );
   const [crawlerId, setCrawlerId] = useState(DEFAULT_CRAWLER_ID);
+  const [localPort, setLocalPort] = useState(initialValues.localPort);
+
+  const availableEnvironments = getAvailableEnvironments(isLocalAvailable);
 
   const pageInputRef = useRef<HTMLInputElement>(null);
 
@@ -132,9 +142,9 @@ export default function HumanVsBotClient({
     }
 
     for (const env of ENVIRONMENT_ORDER) {
-      const { subdomain } = ENVIRONMENTS[env];
-      if (subdomain === null) continue;
-      const prefix = `${subdomain}.`;
+      const config = ENVIRONMENTS[env];
+      if (config.kind !== "subdomain") continue;
+      const prefix = `${config.subdomain}.`;
       if (hostname.startsWith(prefix)) {
         return { prodDomain: hostname.slice(prefix.length), env };
       }
@@ -168,6 +178,7 @@ export default function HumanVsBotClient({
   }
 
   const requiresAuth = ENVIRONMENTS[environment].requiresAuth;
+  const requiresPort = ENVIRONMENTS[environment].kind === "localhost";
   const currentCreds = envCredentials[environment] ?? {
     username: "",
     password: "",
@@ -176,6 +187,7 @@ export default function HumanVsBotClient({
     !isLoading &&
     lockedDomain !== null &&
     pageInput.trim().length > 0 &&
+    (!requiresPort || isValidPort(localPort.trim())) &&
     (!requiresAuth ||
       (currentCreds.username.trim().length > 0 &&
         currentCreds.password.trim().length > 0));
@@ -201,6 +213,15 @@ export default function HumanVsBotClient({
       e.preventDefault();
       if (!lockedDomain || !pageInput.trim()) return;
 
+      const trimmedPort = localPort.trim();
+      if (
+        ENVIRONMENTS[environment].kind === "localhost" &&
+        !isValidPort(trimmedPort)
+      ) {
+        setError(`Enter a port between ${MIN_PORT} and ${MAX_PORT}`);
+        return;
+      }
+
       // Strip domain if user pasted a full URL into the page field
       let path = pageInput.trim();
       try {
@@ -211,7 +232,9 @@ export default function HumanVsBotClient({
         /* keep as-is */
       }
 
-      const fullUrl = buildUrl(lockedDomain, path, environment);
+      const fullUrl = buildUrl(lockedDomain, path, environment, {
+        localPort: trimmedPort,
+      });
 
       const requiresAuth = ENVIRONMENTS[environment].requiresAuth;
       const currentCreds = envCredentials[environment] ?? {
@@ -277,7 +300,7 @@ export default function HumanVsBotClient({
         setIsLoading(false);
       }
     },
-    [lockedDomain, pageInput, environment, selectedCrawler, envCredentials],
+    [lockedDomain, pageInput, environment, localPort, selectedCrawler, envCredentials],
   );
 
   const handleSelect = useCallback(
@@ -295,9 +318,15 @@ export default function HumanVsBotClient({
       // Restore domain + page from stored URL
       try {
         const parsed = new URL(full.url);
-        const { prodDomain, env } = parseDomainInput(parsed.hostname);
-        setLockedDomain(prodDomain);
-        setEnvironment(env);
+        // A localhost URL carries no production domain, so the locked one stays.
+        if (parsed.hostname.toLowerCase() === LOCAL_HOSTNAME) {
+          setEnvironment("local");
+          setLocalPort(parsed.port);
+        } else {
+          const { prodDomain, env } = parseDomainInput(parsed.hostname);
+          setLockedDomain(prodDomain);
+          setEnvironment(env);
+        }
         setPageInput(`${parsed.pathname}${parsed.search}${parsed.hash}`);
       } catch {
         setPageInput(full.url);
@@ -347,7 +376,9 @@ export default function HumanVsBotClient({
                   type="text"
                   value={
                     lockedDomain !== null
-                      ? getHostname(lockedDomain, environment)
+                      ? getHostname(lockedDomain, environment, {
+                          localPort: localPort.trim(),
+                        })
                       : domainInput
                   }
                   onChange={(e) => {
@@ -410,7 +441,29 @@ export default function HumanVsBotClient({
               value={environment}
               onChange={setEnvironment}
               disabled={lockedDomain === null}
+              environments={availableEnvironments}
             />
+
+            {requiresPort && (
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="local-port"
+                  className="text-xs text-muted-foreground font-medium"
+                >
+                  Port
+                </label>
+                <input
+                  id="local-port"
+                  type="text"
+                  inputMode="numeric"
+                  value={localPort}
+                  onChange={(e) => setLocalPort(e.target.value)}
+                  placeholder="3000"
+                  required
+                  className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-24"
+                />
+              </div>
+            )}
 
             {/* AI Crawler */}
             <CrawlerSelect value={crawlerId} onChange={setCrawlerId} />

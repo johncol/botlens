@@ -11,6 +11,8 @@ import {
 import {
   ENVIRONMENTS,
   ENVIRONMENT_ORDER,
+  getAvailableEnvironments,
+  isValidPort,
   type Environment,
 } from "@/lib/environments";
 import { cn } from "@/lib/utils";
@@ -40,10 +42,12 @@ function toSidebarEntry(e: EnvVsEnvEntry): SidebarEntry {
 
 interface EnvVsEnvClientProps {
   initialValues: PageInitialValues;
+  isLocalAvailable: boolean;
 }
 
 export default function EnvVsEnvClient({
   initialValues,
+  isLocalAvailable,
 }: EnvVsEnvClientProps) {
   const [history, setHistory] = useState<EnvVsEnvEntry[]>([]);
 
@@ -63,6 +67,9 @@ export default function EnvVsEnvClient({
   const [leftEnv, setLeftEnv] = useState<Environment>("production");
   const [rightEnv, setRightEnv] = useState<Environment>("development");
   const [crawlerId, setCrawlerId] = useState(DEFAULT_CRAWLER_ID);
+  const [localPort, setLocalPort] = useState(initialValues.localPort);
+
+  const availableEnvironments = getAvailableEnvironments(isLocalAvailable);
 
   const pageInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,9 +106,9 @@ export default function EnvVsEnvClient({
       /* keep as-is */
     }
     for (const env of ENVIRONMENT_ORDER) {
-      const { subdomain } = ENVIRONMENTS[env];
-      if (subdomain === null) continue;
-      const prefix = `${subdomain}.`;
+      const config = ENVIRONMENTS[env];
+      if (config.kind !== "subdomain") continue;
+      const prefix = `${config.subdomain}.`;
       if (hostname.startsWith(prefix)) {
         return { prodDomain: hostname.slice(prefix.length), env };
       }
@@ -133,6 +140,9 @@ export default function EnvVsEnvClient({
 
   const leftRequiresAuth = ENVIRONMENTS[leftEnv].requiresAuth;
   const rightRequiresAuth = ENVIRONMENTS[rightEnv].requiresAuth;
+  const leftRequiresPort = ENVIRONMENTS[leftEnv].kind === "localhost";
+  const rightRequiresPort = ENVIRONMENTS[rightEnv].kind === "localhost";
+  const requiresPort = leftRequiresPort || rightRequiresPort;
   const leftCreds = useMemo(
     () => envCredentials[leftEnv] ?? { username: "", password: "" },
     [envCredentials, leftEnv],
@@ -146,6 +156,7 @@ export default function EnvVsEnvClient({
     !isLoading &&
     lockedDomain !== null &&
     pageInput.trim().length > 0 &&
+    (!requiresPort || isValidPort(localPort.trim())) &&
     (!leftRequiresAuth || (leftCreds.username.trim() && leftCreds.password.trim())) &&
     (!rightRequiresAuth || (rightCreds.username.trim() && rightCreds.password.trim()));
 
@@ -201,6 +212,7 @@ export default function EnvVsEnvClient({
             rightEnvironment: rightEnv,
             crawlerUserAgent: selectedCrawler.userAgent,
             tagFilter,
+            localPort: localPort.trim(),
             credentials: credentialsPayload,
           }),
         });
@@ -256,6 +268,7 @@ export default function EnvVsEnvClient({
       leftEnv,
       rightEnv,
       tagFilter,
+      localPort,
       selectedCrawler,
       leftRequiresAuth,
       rightRequiresAuth,
@@ -433,13 +446,33 @@ export default function EnvVsEnvClient({
                   disabled={lockedDomain === null}
                   className="h-9 px-2 pr-7 text-sm rounded-md border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {ENVIRONMENT_ORDER.map((env) => (
+                  {availableEnvironments.map((env) => (
                     <option key={env} value={env} disabled={env === rightEnv}>
                       {ENVIRONMENTS[env].label}
                     </option>
                   ))}
                 </select>
               </div>
+              {leftRequiresPort && (
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="left-local-port"
+                    className="text-xs text-muted-foreground font-medium"
+                  >
+                    Port
+                  </label>
+                  <input
+                    id="left-local-port"
+                    type="text"
+                    inputMode="numeric"
+                    value={localPort}
+                    onChange={(e) => setLocalPort(e.target.value)}
+                    placeholder="3000"
+                    required
+                    className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-24"
+                  />
+                </div>
+              )}
               <span className={cn(
                 "text-xs flex items-center gap-1 pb-2",
                 leftRequiresAuth
@@ -484,13 +517,33 @@ export default function EnvVsEnvClient({
                   disabled={lockedDomain === null}
                   className="h-9 px-2 pr-7 text-sm rounded-md border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {ENVIRONMENT_ORDER.map((env) => (
+                  {availableEnvironments.map((env) => (
                     <option key={env} value={env} disabled={env === leftEnv}>
                       {ENVIRONMENTS[env].label}
                     </option>
                   ))}
                 </select>
               </div>
+              {rightRequiresPort && (
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="right-local-port"
+                    className="text-xs text-muted-foreground font-medium"
+                  >
+                    Port
+                  </label>
+                  <input
+                    id="right-local-port"
+                    type="text"
+                    inputMode="numeric"
+                    value={localPort}
+                    onChange={(e) => setLocalPort(e.target.value)}
+                    placeholder="3000"
+                    required
+                    className="h-9 px-3 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring w-24"
+                  />
+                </div>
+              )}
               <span className={cn(
                 "text-xs flex items-center gap-1 pb-2",
                 rightRequiresAuth

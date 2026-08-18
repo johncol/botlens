@@ -14,10 +14,14 @@ describe("getPageInitialValues", () => {
         DEVELOPMENT_PASSWORD: "development-password",
         UAT_USER: "uat-user",
         UAT_PASSWORD: "uat-password",
+        LOCAL_PORT: "3001",
+        LOCAL_USER: "local-user",
+        LOCAL_PASSWORD: "local-password",
       }),
     ).toEqual({
       domain: "www.example.com",
       page: "/en/clothing",
+      localPort: "3001",
       credentials: {
         staging: {
           username: "staging-user",
@@ -28,6 +32,7 @@ describe("getPageInitialValues", () => {
           password: "development-password",
         },
         uat: { username: "uat-user", password: "uat-password" },
+        local: { username: "local-user", password: "local-password" },
       },
     });
   });
@@ -38,10 +43,12 @@ describe("getPageInitialValues", () => {
     ).toEqual({
       domain: "",
       page: "",
+      localPort: "",
       credentials: {
         staging: { username: "", password: "" },
         development: { username: "", password: "" },
         uat: { username: "", password: "" },
+        local: { username: "", password: "" },
       },
     });
   });
@@ -56,8 +63,11 @@ describe("getPageInitialValues", () => {
           PAGE: "/secret-page",
           STAGING_USER: "user",
           STAGING_PASSWORD: "password",
+          LOCAL_PORT: "3001",
+          LOCAL_USER: "local-user",
+          LOCAL_PASSWORD: "local-password",
         }),
-      ).toEqual({ domain: "", page: "", credentials: {} });
+      ).toEqual({ domain: "", page: "", localPort: "", credentials: {} });
     },
   );
 });

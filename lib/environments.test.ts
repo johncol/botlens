@@ -3,7 +3,8 @@ import {
   getBaseDomain,
   getHostname,
   buildUrl,
-  detectEnvironment,
+  getAvailableEnvironments,
+  isValidPort,
   ENVIRONMENTS,
   ENVIRONMENT_ORDER,
 } from "./environments";
@@ -48,6 +49,16 @@ describe("getHostname", () => {
   it("prepends uat.qa subdomain to base domain", () => {
     expect(getHostname("example.com", "uat")).toBe("uat.qa.example.com");
   });
+
+  it("appends the port for the local environment", () => {
+    expect(
+      getHostname("example.com", "local", { localPort: "3001" }),
+    ).toBe("localhost:3001");
+  });
+
+  it("omits the port for the local environment when none is given", () => {
+    expect(getHostname("example.com", "local")).toBe("localhost");
+  });
 });
 
 describe("buildUrl", () => {
@@ -74,47 +85,49 @@ describe("buildUrl", () => {
       "https://example.com/en/product",
     );
   });
+
+  it("builds an http localhost URL on the given port", () => {
+    expect(
+      buildUrl("example.com", "/en/product", "local", { localPort: "3001" }),
+    ).toBe("http://localhost:3001/en/product");
+  });
+
+  it.each(["", "abc", "0", "65536", " 3000 "])(
+    "throws for the local environment when the port is %j",
+    (localPort) => {
+      expect(() =>
+        buildUrl("example.com", "/en", "local", { localPort }),
+      ).toThrow(/port between 1 and 65535/);
+    },
+  );
+
+  it("throws for the local environment when no port is given", () => {
+    expect(() => buildUrl("example.com", "/en", "local")).toThrow();
+  });
 });
 
-describe("detectEnvironment", () => {
-  it("detects production (www domain)", () => {
-    expect(
-      detectEnvironment("https://www.example.com/en", "www.example.com"),
-    ).toBe("production");
+describe("isValidPort", () => {
+  it.each(["1", "80", "3000", "65535"])("accepts %j", (port) => {
+    expect(isValidPort(port)).toBe(true);
   });
 
-  it("detects production (apex domain)", () => {
-    expect(detectEnvironment("https://example.com/en", "example.com")).toBe(
-      "production",
-    );
+  it.each(["", "0", "65536", "-1", "3000abc", "0x0BB8", " 3000", "30.00"])(
+    "rejects %j",
+    (port) => {
+      expect(isValidPort(port)).toBe(false);
+    },
+  );
+});
+
+describe("getAvailableEnvironments", () => {
+  it("includes local when local is available", () => {
+    expect(getAvailableEnvironments(true)).toEqual(ENVIRONMENT_ORDER);
   });
 
-  it("detects staging", () => {
-    expect(
-      detectEnvironment("https://staging.example.com/en", "www.example.com"),
-    ).toBe("staging");
-  });
-
-  it("detects development", () => {
-    expect(
-      detectEnvironment("https://development.example.com/en", "example.com"),
-    ).toBe("development");
-  });
-
-  it("detects uat", () => {
-    expect(
-      detectEnvironment("https://uat.qa.example.com/en", "example.com"),
-    ).toBe("uat");
-  });
-
-  it("returns null for an unknown hostname", () => {
-    expect(
-      detectEnvironment("https://unknown.other.com/en", "example.com"),
-    ).toBeNull();
-  });
-
-  it("returns null for an invalid URL", () => {
-    expect(detectEnvironment("not-a-url", "example.com")).toBeNull();
+  it("excludes local when local is not available", () => {
+    const environments = getAvailableEnvironments(false);
+    expect(environments).not.toContain("local");
+    expect(environments).toHaveLength(ENVIRONMENT_ORDER.length - 1);
   });
 });
 
@@ -134,14 +147,24 @@ describe("ENVIRONMENTS config", () => {
   it("uat requires auth", () => {
     expect(ENVIRONMENTS.uat.requiresAuth).toBe(true);
   });
+
+  it("local requires auth", () => {
+    expect(ENVIRONMENTS.local.requiresAuth).toBe(true);
+  });
 });
 
 describe("ENVIRONMENT_ORDER", () => {
-  it("contains all four environments", () => {
+  it("contains all five environments", () => {
     expect(ENVIRONMENT_ORDER).toEqual(
-      expect.arrayContaining(["production", "staging", "development", "uat"]),
+      expect.arrayContaining([
+        "production",
+        "staging",
+        "development",
+        "uat",
+        "local",
+      ]),
     );
-    expect(ENVIRONMENT_ORDER).toHaveLength(4);
+    expect(ENVIRONMENT_ORDER).toHaveLength(5);
   });
 
   it("lists production first", () => {

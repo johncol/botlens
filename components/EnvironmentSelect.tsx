@@ -4,9 +4,15 @@ interface EnvironmentSelectProps {
   value: Environment;
   onChange: (env: Environment) => void;
   disabled?: boolean;
+  environments?: Environment[];
 }
 
-export function EnvironmentSelect({ value, onChange, disabled }: EnvironmentSelectProps) {
+export function EnvironmentSelect({
+  value,
+  onChange,
+  disabled,
+  environments = ENVIRONMENT_ORDER,
+}: EnvironmentSelectProps) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs text-muted-foreground font-medium">
@@ -18,7 +24,7 @@ export function EnvironmentSelect({ value, onChange, disabled }: EnvironmentSele
         disabled={disabled}
         className="h-9 px-2 pr-7 text-sm rounded-md border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {ENVIRONMENT_ORDER.map((env) => (
+        {environments.map((env) => (
           <option key={env} value={env}>
             {ENVIRONMENTS[env].label}
           </option>

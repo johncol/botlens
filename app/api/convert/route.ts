@@ -3,7 +3,7 @@ import TurndownService from "turndown";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
 import { stripStyleTags } from "@/lib/html-to-markdown";
-import { IS_LOCAL, MAX_HTML_BYTES } from "@/lib/config";
+import { IS_VERCEL, MAX_HTML_BYTES } from "@/lib/config";
 
 const turndown = new TurndownService({
   headingStyle: "atx",
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      if (!IS_LOCAL) {
+      if (IS_VERCEL) {
         await assertNotPrivateUrl(url);
       }
     } catch (err) {

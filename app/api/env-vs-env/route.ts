@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ENVIRONMENTS, buildUrl, type Environment } from "@/lib/environments";
+import {
+  ENVIRONMENTS,
+  buildUrl,
+  isValidPort,
+  MAX_PORT,
+  MIN_PORT,
+  type Environment,
+} from "@/lib/environments";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
 import { AI_CRAWLERS } from "@/lib/crawlers";
 import { fetchCrawlerHtml } from "@/lib/fetch-crawler";
 import { htmlToMarkdown } from "@/lib/html-to-markdown";
-import { IS_LOCAL, MAX_HTML_BYTES } from "@/lib/config";
+import { IS_VERCEL, MAX_HTML_BYTES } from "@/lib/config";
 
 const ALLOWED_TAG_FILTERS = ["body", "header", "nav", "main", "footer"] as const;
 type TagFilter = (typeof ALLOWED_TAG_FILTERS)[number];
@@ -17,6 +24,7 @@ export async function POST(request: NextRequest) {
     rightEnvironment?: string;
     crawlerUserAgent?: string;
     tagFilter?: string;
+    localPort?: string;
     credentials?: Partial<Record<Environment, { username: string; password: string }>>;
   };
   try {
@@ -32,6 +40,7 @@ export async function POST(request: NextRequest) {
     rightEnvironment,
     crawlerUserAgent,
     tagFilter = "main",
+    localPort = "",
     credentials = {},
   } = body;
 
@@ -73,6 +82,24 @@ export async function POST(request: NextRequest) {
   const leftEnv = leftEnvironment as Environment;
   const rightEnv = rightEnvironment as Environment;
 
+  const usesLocal = [leftEnv, rightEnv].some(
+    (env) => ENVIRONMENTS[env].kind === "localhost",
+  );
+
+  if (usesLocal && IS_VERCEL) {
+    return NextResponse.json(
+      { error: `The ${ENVIRONMENTS.local.label} environment is only available when BotLens runs on your machine` },
+      { status: 400 },
+    );
+  }
+
+  if (usesLocal && !isValidPort(localPort)) {
+    return NextResponse.json(
+      { error: `localPort must be a whole number between ${MIN_PORT} and ${MAX_PORT}` },
+      { status: 400 },
+    );
+  }
+
   const leftCreds = ENVIRONMENTS[leftEnv].requiresAuth
     ? (credentials[leftEnv] ?? null)
     : null;
@@ -93,8 +120,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const leftUrl = buildUrl(domain, page, leftEnv);
-  const rightUrl = buildUrl(domain, page, rightEnv);
+  const leftUrl = buildUrl(domain, page, leftEnv, { localPort });
+  const rightUrl = buildUrl(domain, page, rightEnv, { localPort });
 
   for (const url of [leftUrl, rightUrl]) {
     let parsed: URL;
@@ -110,7 +137,7 @@ export async function POST(request: NextRequest) {
       );
     }
     try {
-      if (!IS_LOCAL) {
+      if (IS_VERCEL) {
         await assertNotPrivateUrl(url);
       }
     } catch (err) {

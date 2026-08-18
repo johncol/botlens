@@ -3,7 +3,7 @@ import { ENVIRONMENTS, type Environment } from "@/lib/environments";
 import { assertNotPrivateUrl } from "@/lib/ssrf-guard";
 import { AI_CRAWLERS } from "@/lib/crawlers";
 import { runComparison } from "@/lib/run-comparison";
-import { SCROLL_MAX, PAGE_TIMEOUT_MS, MAX_HTML_BYTES, IS_LOCAL } from "@/lib/config";
+import { SCROLL_MAX, PAGE_TIMEOUT_MS, MAX_HTML_BYTES, IS_VERCEL } from "@/lib/config";
 
 export async function POST(request: NextRequest) {
   let body: {
@@ -51,6 +51,13 @@ export async function POST(request: NextRequest) {
 
   const env = environment as Environment;
 
+  if (ENVIRONMENTS[env].kind === "localhost" && IS_VERCEL) {
+    return NextResponse.json(
+      { error: `The ${ENVIRONMENTS[env].label} environment is only available when BotLens runs on your machine` },
+      { status: 400 },
+    );
+  }
+
   const credentials =
     ENVIRONMENTS[env].requiresAuth && username && password
       ? { username, password }
@@ -79,7 +86,7 @@ export async function POST(request: NextRequest) {
   void parsedUrl; // used above for protocol check only; assertNotPrivateUrl re-parses internally
 
   try {
-    if (!IS_LOCAL) {
+    if (IS_VERCEL) {
       await assertNotPrivateUrl(rawUrl);
     }
   } catch (err) {

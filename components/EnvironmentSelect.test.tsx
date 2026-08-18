@@ -45,4 +45,18 @@ describe("EnvironmentSelect", () => {
     render(<EnvironmentSelect value="production" onChange={vi.fn()} />);
     expect(screen.getByRole("combobox")).toBeEnabled();
   });
+
+  it("renders only the environments it is given", () => {
+    render(
+      <EnvironmentSelect
+        value="production"
+        onChange={vi.fn()}
+        environments={["production", "staging"]}
+      />,
+    );
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(2);
+    expect(options[0]).toHaveValue("production");
+    expect(options[1]).toHaveValue("staging");
+  });
 });

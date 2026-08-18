@@ -13,18 +13,21 @@ export interface PageCredentials {
 export interface PageInitialValues {
   domain: string;
   page: string;
+  /** Kept as a string because the port input is a text field. */
+  localPort: string;
   credentials: Partial<Record<Environment, PageCredentials>>;
 }
 
 const EMPTY_INITIAL_VALUES: PageInitialValues = {
   domain: "",
   page: "",
+  localPort: "",
   credentials: {},
 };
 
 /**
- * Reads `DOMAIN`, `PAGE`, and per-environment credential env vars and returns
- * pre-populated initial values for use during local development.
+ * Reads `DOMAIN`, `PAGE`, `LOCAL_PORT`, and per-environment credential env vars
+ * and returns pre-populated initial values for use during local development.
  *
  * Returns empty values in all non-development environments to avoid leaking
  * internal hostnames or credentials into production builds.
@@ -37,6 +40,7 @@ export function getPageInitialValues(
   return {
     domain: env.DOMAIN ?? "",
     page: env.PAGE ?? "",
+    localPort: env.LOCAL_PORT ?? "",
     credentials: {
       staging: {
         username: env.STAGING_USER ?? "",
@@ -49,6 +53,10 @@ export function getPageInitialValues(
       uat: {
         username: env.UAT_USER ?? "",
         password: env.UAT_PASSWORD ?? "",
+      },
+      local: {
+        username: env.LOCAL_USER ?? "",
+        password: env.LOCAL_PASSWORD ?? "",
       },
     },
   };
