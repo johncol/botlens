@@ -24,11 +24,9 @@ export async function fetchCrawlerHtml(
 ): Promise<string> {
   const maxHtmlBytes = options.maxHtmlBytes ?? DEFAULT_MAX_HTML_BYTES;
   const tagFilter = options.tagFilter ?? DEFAULT_TAG_FILTER;
-  const isLocal = new URL(url).hostname === "localhost";
   const headers: Record<string, string> = {
     "User-Agent": userAgent,
     Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    ...(isLocal ? { "x-is-bot": "true" } : {}),
   };
 
   if (credentials) {
