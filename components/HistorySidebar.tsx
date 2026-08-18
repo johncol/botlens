@@ -126,7 +126,7 @@ export function HistorySidebar({
               <p className="text-xs text-muted-foreground">{emptyMessage}</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
               <ul className="py-2">
                 {entries.map((entry, i) => (
                   <li key={entry.id}>
