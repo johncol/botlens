@@ -21,6 +21,10 @@ const NON_STRICT_RULES: EquivalencyRule[] = [
   // image for raw HTTP crawlers.
   (human, crawler) =>
     /^\[Video\]\(.+\)$/.test(human) && /^\[VideoPoster\]\(.+\)$/.test(crawler),
+
+  // Two lines are equivalent when their only URL difference is a ".qa" environment subdomain,
+  // e.g. assets.aritzia.com vs assets.qa.aritzia.com.
+  (human, crawler) => human.replace(/\.qa\./g, ".") === crawler.replace(/\.qa\./g, "."),
 ];
 
 function makeComparator(rules: EquivalencyRule[]) {
