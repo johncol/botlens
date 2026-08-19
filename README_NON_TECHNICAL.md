@@ -126,3 +126,19 @@ UAT_PASSWORD=password
 ```
 
 Save and close the file. The next time you start the app, the form fills in automatically.
+
+---
+
+## Optional: Update the app to get the latest changes
+
+When a new version of BotLens is available, run these two commands in Terminal:
+
+```
+cd botlens
+```
+
+```
+git pull origin main
+```
+
+That is all. The next time you start the app with `npm run dev`, it will run the latest version.
