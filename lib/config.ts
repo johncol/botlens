@@ -14,7 +14,7 @@ function parseEnvInt(key: string, defaultValue: number): number {
 }
 
 // ── Defaults ─────────────────────────────────────────────────────────────────
-export const DEFAULT_MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
+export const DEFAULT_MAX_HTML_BYTES = 6 * 1024 * 1024; // 6 MB
 export const DEFAULT_SCROLL_MAX = 10;
 export const DEFAULT_PAGE_TIMEOUT_MS = 60_000;
 
