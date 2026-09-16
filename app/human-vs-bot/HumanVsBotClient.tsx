@@ -22,6 +22,7 @@ import { AI_CRAWLERS, DEFAULT_CRAWLER_ID } from "@/lib/crawlers";
 import type { PageInitialValues } from "@/lib/page-prefill";
 import { useHistory } from "@/hooks/use-history";
 import { useJsonRequest } from "@/hooks/use-json-request";
+import { useSyncedScroll } from "@/hooks/use-synced-scroll";
 import {
   hasCompleteCredentials,
   useEnvironmentCredentials,
@@ -31,6 +32,7 @@ import { DiffModeToggle, type DiffMode } from "@/components/DiffModeToggle";
 import { EmptyState } from "@/components/EmptyState";
 import { InlineAlert } from "@/components/InlineAlert";
 import { LoadingButton } from "@/components/LoadingButton";
+import { SyncScrollToggle } from "@/components/SyncScrollToggle";
 import { ViewToggle, type ViewMode } from "@/components/ViewToggle";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { CrawlerSelect } from "@/components/CrawlerSelect";
@@ -120,6 +122,15 @@ export default function HumanVsBotClient({
   }>({ human: EMPTY_PANEL, crawler: EMPTY_PANEL });
   const [viewMode, setViewMode] = useState<ViewMode>("rendered");
   const [diffMode, setDiffMode] = useState<DiffMode>("exact");
+  const {
+    syncScroll,
+    setSyncScroll,
+    canSyncScroll,
+    leftRef,
+    rightRef,
+    onLeftScroll,
+    onRightScroll,
+  } = useSyncedScroll(panels.human, panels.crawler, viewMode);
 
   const { isLoading, error, setError, send } =
     useJsonRequest<ComparisonResponse>("/api/human-vs-bot", "Comparison failed");
@@ -376,6 +387,9 @@ export default function HumanVsBotClient({
                 {viewMode === "diff" && (
                   <DiffModeToggle value={diffMode} onChange={setDiffMode} />
                 )}
+                {canSyncScroll && (
+                  <SyncScrollToggle value={syncScroll} onChange={setSyncScroll} />
+                )}
               </div>
               {history.activeEntry && (
                 <div className="flex items-center gap-2">
@@ -402,6 +416,8 @@ export default function HumanVsBotClient({
                   viewMode={viewMode}
                   warning={panels.human.warning}
                   error={panels.human.error}
+                  scrollContainerRef={leftRef}
+                  onScroll={onLeftScroll}
                 />
               </div>
               <OutputPanel
@@ -414,6 +430,8 @@ export default function HumanVsBotClient({
                 diffBase={viewMode === "diff" ? panels.human.markdown : undefined}
                 diffMode={diffMode}
                 statusBadge={panels.crawler.statusLabel}
+                scrollContainerRef={rightRef}
+                onScroll={onRightScroll}
               />
             </div>
           </>

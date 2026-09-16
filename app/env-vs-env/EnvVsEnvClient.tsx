@@ -23,6 +23,7 @@ import { AI_CRAWLERS, DEFAULT_CRAWLER_ID } from "@/lib/crawlers";
 import type { PageInitialValues } from "@/lib/page-prefill";
 import { useHistory } from "@/hooks/use-history";
 import { useJsonRequest } from "@/hooks/use-json-request";
+import { useSyncedScroll } from "@/hooks/use-synced-scroll";
 import {
   hasCompleteCredentials,
   useEnvironmentCredentials,
@@ -33,6 +34,7 @@ import { DiffModeToggle, type DiffMode } from "@/components/DiffModeToggle";
 import { EmptyState } from "@/components/EmptyState";
 import { InlineAlert } from "@/components/InlineAlert";
 import { LoadingButton } from "@/components/LoadingButton";
+import { SyncScrollToggle } from "@/components/SyncScrollToggle";
 import { ViewToggle, type ViewMode } from "@/components/ViewToggle";
 import { CrawlerSelect } from "@/components/CrawlerSelect";
 import { OutputPanel } from "@/components/OutputPanel";
@@ -119,6 +121,15 @@ export default function EnvVsEnvClient({
   }>({ left: EMPTY_PANEL, right: EMPTY_PANEL });
   const [viewMode, setViewMode] = useState<ViewMode>("rendered");
   const [diffMode, setDiffMode] = useState<DiffMode>("exact");
+  const {
+    syncScroll,
+    setSyncScroll,
+    canSyncScroll,
+    leftRef,
+    rightRef,
+    onLeftScroll,
+    onRightScroll,
+  } = useSyncedScroll(panels.left, panels.right, viewMode);
 
   const { isLoading, error, setError, send } = useJsonRequest<EnvVsEnvResponse>(
     "/api/env-vs-env",
@@ -441,6 +452,9 @@ export default function EnvVsEnvClient({
                 {viewMode === "diff" && (
                   <DiffModeToggle value={diffMode} onChange={setDiffMode} />
                 )}
+                {canSyncScroll && (
+                  <SyncScrollToggle value={syncScroll} onChange={setSyncScroll} />
+                )}
               </div>
               {history.activeEntry && (
                 <div className="flex items-center gap-2">
@@ -472,6 +486,8 @@ export default function EnvVsEnvClient({
                   warning={panels.left.warning}
                   error={panels.left.error}
                   statusBadge={panels.left.statusLabel}
+                  scrollContainerRef={leftRef}
+                  onScroll={onLeftScroll}
                 />
               </div>
               <OutputPanel
@@ -488,6 +504,8 @@ export default function EnvVsEnvClient({
                 diffBase={viewMode === "diff" ? panels.left.markdown : undefined}
                 diffMode={diffMode}
                 statusBadge={panels.right.statusLabel}
+                scrollContainerRef={rightRef}
+                onScroll={onRightScroll}
               />
             </div>
           </>

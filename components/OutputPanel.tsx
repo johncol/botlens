@@ -19,6 +19,9 @@ export interface OutputPanelProps {
   /** When viewMode === 'diff', diff the content against this base */
   diffBase?: string | null;
   diffMode?: DiffMode;
+  /** Ref to the scrollable content area, used for synced scrolling between panels. */
+  scrollContainerRef?: React.Ref<HTMLDivElement>;
+  onScroll?: () => void;
 }
 
 export function OutputPanel({
@@ -31,6 +34,8 @@ export function OutputPanel({
   statusBadge,
   diffBase,
   diffMode = "exact",
+  scrollContainerRef,
+  onScroll,
 }: OutputPanelProps) {
   const [dismissedWarning, setDismissedWarning] = useState<string>();
   const [dismissedError, setDismissedError] = useState<string>();
@@ -103,7 +108,7 @@ export function OutputPanel({
           </button>
         </div>
       )}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={scrollContainerRef} onScroll={onScroll}>
         {markdown !== null ? (
           viewMode === "diff" && diffResult ? (
             <pre className="text-xs font-mono whitespace-pre-wrap break-words p-4 leading-5">

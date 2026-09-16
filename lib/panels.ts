@@ -6,3 +6,8 @@ export const EMPTY_PANEL: PanelContent = { markdown: null };
 export function hasPanelContent(panel: PanelContent): boolean {
   return panel.markdown !== null || Boolean(panel.error);
 }
+
+/** True when a panel has real markdown text to scroll through (not empty/error placeholders). */
+export function hasRenderableContent(panel: PanelContent): boolean {
+  return panel.markdown !== null && panel.markdown.trim().length > 0;
+}
