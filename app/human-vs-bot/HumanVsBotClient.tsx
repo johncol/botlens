@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CrawlerComparisonEntry, PanelContent, SidebarEntry } from "@/types";
+import { HumanVsBotEntry, PanelContent, SidebarEntry } from "@/types";
 import { CRAWLER_COMPARISON_KEY } from "@/lib/history";
 import {
   ENVIRONMENTS,
@@ -53,7 +53,7 @@ type ComparisonResponse = {
   resolvedUrl?: string;
 };
 
-function toSidebarEntry(entry: CrawlerComparisonEntry): SidebarEntry {
+function toSidebarEntry(entry: HumanVsBotEntry): SidebarEntry {
   let label = entry.url;
   try {
     label = `${new URL(entry.url).pathname} (${entry.environment})`;
@@ -68,7 +68,7 @@ function toSidebarEntry(entry: CrawlerComparisonEntry): SidebarEntry {
   };
 }
 
-function toPanels(entry: CrawlerComparisonEntry | null) {
+function toPanels(entry: HumanVsBotEntry | null) {
   return {
     human: {
       markdown: entry?.humanMarkdown ?? null,
@@ -93,7 +93,7 @@ export default function HumanVsBotClient({
   initialValues,
   isLocalAvailable,
 }: HumanVsBotClientProps) {
-  const history = useHistory<CrawlerComparisonEntry>(CRAWLER_COMPARISON_KEY);
+  const history = useHistory<HumanVsBotEntry>(CRAWLER_COMPARISON_KEY);
   const { addEntry, removeEntry, findEntry, setActiveId } = history;
 
   const [domainInput, setDomainInput] = useState(initialValues.domain);

@@ -35,7 +35,7 @@ export type PanelContent = {
   statusLabel?: string;
 };
 
-export type CrawlerComparisonEntry = {
+export type HumanVsBotEntry = {
   id: string;
   createdAt: number;
   url: string;
