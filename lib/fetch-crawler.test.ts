@@ -32,7 +32,24 @@ describe("fetchCrawlerHtml", () => {
       null,
     );
 
-    expect(result).toContain("<p>Content</p>");
+    expect(result.html).toContain("<p>Content</p>");
+    expect(result.statusLabel).toBe("200 OK");
+  });
+
+  it("prefixes the status label with 'redirected ➔' when the response was redirected", async () => {
+    const html = "<html><body><main><p>Content</p></main></body></html>";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ...makeResponse(html), redirected: true }),
+    );
+
+    const result = await fetchCrawlerHtml(
+      "https://example.com",
+      "TestBot/1.0",
+      null,
+    );
+
+    expect(result.statusLabel).toBe("redirected ➔ 200 OK");
   });
 
   it("sends the correct User-Agent header", async () => {
@@ -93,8 +110,21 @@ describe("fetchCrawlerHtml", () => {
     ).rejects.toThrow("Remote server returned 403 Forbidden");
   });
 
+  it("attaches the status label to the thrown error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        makeResponse("", false, 403, "Forbidden"),
+      ),
+    );
+
+    await expect(
+      fetchCrawlerHtml("https://example.com", "Bot/1.0", null),
+    ).rejects.toMatchObject({ statusLabel: "403 Forbidden" });
+  });
+
   it("throws when the response exceeds the default size limit", async () => {
-    const bigBuffer = new ArrayBuffer(3 * 1024 * 1024); // 3 MB > 2 MB default
+    const bigBuffer = new ArrayBuffer(7 * 1024 * 1024); // 7 MB > 6 MB default
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       arrayBuffer: () => Promise.resolve(bigBuffer),

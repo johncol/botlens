@@ -49,6 +49,7 @@ type ComparisonResponse = {
   crawlerWarning?: string;
   humanError?: string;
   crawlerError?: string;
+  crawlerStatusLabel?: string;
   resolvedUrl?: string;
 };
 
@@ -78,6 +79,7 @@ function toPanels(entry: CrawlerComparisonEntry | null) {
       markdown: entry?.crawlerMarkdown ?? null,
       warning: entry?.crawlerWarning,
       error: entry?.crawlerError,
+      statusLabel: entry?.crawlerStatusLabel,
     },
   };
 }
@@ -208,6 +210,7 @@ export default function HumanVsBotClient({
           markdown: data.crawlerMarkdown,
           warning: data.crawlerWarning,
           error: data.crawlerError,
+          statusLabel: data.crawlerStatusLabel,
         },
       });
 
@@ -221,6 +224,7 @@ export default function HumanVsBotClient({
         crawlerWarning: data.crawlerWarning,
         humanError: data.humanError,
         crawlerError: data.crawlerError,
+        crawlerStatusLabel: data.crawlerStatusLabel,
       });
     },
     [
@@ -409,6 +413,7 @@ export default function HumanVsBotClient({
                 error={panels.crawler.error}
                 diffBase={viewMode === "diff" ? panels.human.markdown : undefined}
                 diffMode={diffMode}
+                statusBadge={panels.crawler.statusLabel}
               />
             </div>
           </>

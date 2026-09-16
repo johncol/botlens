@@ -32,6 +32,7 @@ export type PanelContent = {
   markdown: string | null;
   warning?: string;
   error?: string;
+  statusLabel?: string;
 };
 
 export type CrawlerComparisonEntry = {
@@ -46,6 +47,7 @@ export type CrawlerComparisonEntry = {
   crawlerWarning?: string;
   humanError?: string;
   crawlerError?: string;
+  crawlerStatusLabel?: string;
 };
 
 export type EnvVsEnvEntry = {
@@ -64,4 +66,6 @@ export type EnvVsEnvEntry = {
   rightWarning?: string;
   leftError?: string;
   rightError?: string;
+  leftStatusLabel?: string;
+  rightStatusLabel?: string;
 };

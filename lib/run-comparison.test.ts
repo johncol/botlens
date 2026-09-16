@@ -25,6 +25,7 @@ import { runComparison, type RunComparisonOptions } from "./run-comparison";
 import { fetchHumanHtml } from "./fetch-human";
 import { fetchCrawlerHtml } from "./fetch-crawler";
 import { htmlToMarkdown } from "./html-to-markdown";
+import { CrawlerHttpError } from "./errors";
 
 const baseOptions: RunComparisonOptions = {
   url: "https://example.com",
@@ -42,7 +43,10 @@ describe("runComparison", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.mocked(fetchHumanHtml).mockResolvedValue({ html: "<p>Human</p>" });
-    vi.mocked(fetchCrawlerHtml).mockResolvedValue("<p>Crawler</p>");
+    vi.mocked(fetchCrawlerHtml).mockResolvedValue({
+      html: "<p>Crawler</p>",
+      statusLabel: "200 OK",
+    });
     vi.mocked(htmlToMarkdown).mockImplementation((html: string) => `md:${html}`);
   });
 
@@ -85,6 +89,22 @@ describe("runComparison", () => {
     expect(result.crawlerMarkdown).toBeNull();
     expect(result.crawlerError).toBe("403 Forbidden");
     expect(result.comparison).toBeNull();
+  });
+
+  it("forwards the crawler's status label on success", async () => {
+    const result = await runComparison({ ...baseOptions });
+
+    expect(result.crawlerStatusLabel).toBe("200 OK");
+  });
+
+  it("forwards the crawler's status label from a CrawlerHttpError on failure", async () => {
+    vi.mocked(fetchCrawlerHtml).mockRejectedValue(
+      new CrawlerHttpError("403 Forbidden", "403 Forbidden"),
+    );
+
+    const result = await runComparison({ ...baseOptions });
+
+    expect(result.crawlerStatusLabel).toBe("403 Forbidden");
   });
 
   it("sets crawlerWarning when crawler markdown is empty/whitespace", async () => {

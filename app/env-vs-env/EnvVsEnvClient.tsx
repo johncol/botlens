@@ -52,6 +52,8 @@ type EnvVsEnvResponse = {
   rightWarning?: string;
   leftError?: string;
   rightError?: string;
+  leftStatusLabel?: string;
+  rightStatusLabel?: string;
 };
 
 function toSidebarEntry(entry: EnvVsEnvEntry): SidebarEntry {
@@ -69,11 +71,13 @@ function toPanels(entry: EnvVsEnvEntry | null) {
       markdown: entry?.leftMarkdown ?? null,
       warning: entry?.leftWarning,
       error: entry?.leftError,
+      statusLabel: entry?.leftStatusLabel,
     },
     right: {
       markdown: entry?.rightMarkdown ?? null,
       warning: entry?.rightWarning,
       error: entry?.rightError,
+      statusLabel: entry?.rightStatusLabel,
     },
   };
 }
@@ -201,11 +205,13 @@ export default function EnvVsEnvClient({
           markdown: data.leftMarkdown,
           warning: data.leftWarning,
           error: data.leftError,
+          statusLabel: data.leftStatusLabel,
         },
         right: {
           markdown: data.rightMarkdown,
           warning: data.rightWarning,
           error: data.rightError,
+          statusLabel: data.rightStatusLabel,
         },
       });
 
@@ -222,6 +228,8 @@ export default function EnvVsEnvClient({
         rightWarning: data.rightWarning,
         leftError: data.leftError,
         rightError: data.rightError,
+        leftStatusLabel: data.leftStatusLabel,
+        rightStatusLabel: data.rightStatusLabel,
       });
     },
     [
@@ -463,6 +471,7 @@ export default function EnvVsEnvClient({
                   viewMode={viewMode}
                   warning={panels.left.warning}
                   error={panels.left.error}
+                  statusBadge={panels.left.statusLabel}
                 />
               </div>
               <OutputPanel
@@ -478,6 +487,7 @@ export default function EnvVsEnvClient({
                 error={panels.right.error}
                 diffBase={viewMode === "diff" ? panels.left.markdown : undefined}
                 diffMode={diffMode}
+                statusBadge={panels.right.statusLabel}
               />
             </div>
           </>

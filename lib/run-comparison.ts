@@ -2,7 +2,7 @@ import { fetchHumanHtml, type Credentials } from "./fetch-human";
 import { fetchCrawlerHtml } from "./fetch-crawler";
 import { htmlToMarkdown } from "./html-to-markdown";
 import { compareMarkdowns, type ComparisonResult } from "./compare-markdowns";
-import { settledError, settledValue } from "./errors";
+import { settledError, settledStatusLabel, settledValue } from "./errors";
 import { DEFAULT_TAG_FILTER, emptyContentWarning } from "./tag-filters";
 
 export type { Credentials, ComparisonResult };
@@ -28,6 +28,7 @@ export type RunComparisonResult = {
   crawlerWarning?: string;
   humanError?: string;
   crawlerError?: string;
+  crawlerStatusLabel?: string;
   resolvedUrl: string;
 };
 
@@ -56,10 +57,11 @@ export async function runComparison(
   }
 
   const humanHtml = settledValue(humanResult);
-  const crawlerHtml = settledValue(crawlerResult);
+  const crawlerFetch = settledValue(crawlerResult);
 
   const humanMarkdown = humanHtml === null ? null : htmlToMarkdown(humanHtml.html);
-  const crawlerMarkdown = crawlerHtml === null ? null : htmlToMarkdown(crawlerHtml);
+  const crawlerMarkdown =
+    crawlerFetch === null ? null : htmlToMarkdown(crawlerFetch.html);
 
   const humanWarning = humanHtml?.warning;
   const crawlerWarning =
@@ -69,6 +71,8 @@ export async function runComparison(
 
   const humanError = settledError(humanResult);
   const crawlerError = settledError(crawlerResult);
+  const crawlerStatusLabel =
+    crawlerFetch?.statusLabel ?? settledStatusLabel(crawlerResult);
 
   const comparison =
     humanMarkdown !== null && crawlerMarkdown !== null
@@ -83,6 +87,7 @@ export async function runComparison(
     crawlerWarning,
     humanError,
     crawlerError,
+    crawlerStatusLabel,
     resolvedUrl: url,
   };
 }

@@ -18,9 +18,9 @@ import {
   validateFetchableUrl,
   validateTagFilter,
 } from "@/lib/api-validation";
-import { fetchCrawlerHtml } from "@/lib/fetch-crawler";
+import { fetchCrawlerHtml, FetchCrawlerResult } from "@/lib/fetch-crawler";
 import { htmlToMarkdown } from "@/lib/html-to-markdown";
-import { settledError, settledValue } from "@/lib/errors";
+import { settledError, settledStatusLabel, settledValue } from "@/lib/errors";
 import {
   DEFAULT_TAG_FILTER,
   emptyContentWarning,
@@ -115,9 +115,17 @@ export async function POST(request: NextRequest) {
     fetchCrawlerHtml(rightUrl, crawlerUserAgent, rightCreds, fetchOptions),
   ]);
 
-  function toMarkdown(result: PromiseSettledResult<string>): string | null {
-    const html = settledValue(result);
-    return html === null ? null : htmlToMarkdown(html);
+  function toMarkdown(
+    result: PromiseSettledResult<FetchCrawlerResult>,
+  ): string | null {
+    const fetched = settledValue(result);
+    return fetched === null ? null : htmlToMarkdown(fetched.html);
+  }
+
+  function toStatusLabel(
+    result: PromiseSettledResult<FetchCrawlerResult>,
+  ): string | undefined {
+    return settledValue(result)?.statusLabel ?? settledStatusLabel(result);
   }
 
   function toWarning(markdown: string | null): string | undefined {
@@ -136,5 +144,7 @@ export async function POST(request: NextRequest) {
     rightWarning: toWarning(rightMarkdown),
     leftError: settledError(leftResult),
     rightError: settledError(rightResult),
+    leftStatusLabel: toStatusLabel(leftResult),
+    rightStatusLabel: toStatusLabel(rightResult),
   });
 }

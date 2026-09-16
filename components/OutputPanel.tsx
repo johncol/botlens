@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { compareMarkdowns } from "@/lib/compare-markdowns";
 import { MarkdownView } from "@/components/MarkdownView";
+import { Badge } from "@/components/ui/badge";
 import type { DiffMode } from "@/components/DiffModeToggle";
 import type { ViewMode } from "@/components/ViewToggle";
 
@@ -14,6 +15,7 @@ export interface OutputPanelProps {
   viewMode: ViewMode;
   warning?: string;
   error?: string;
+  statusBadge?: string;
   /** When viewMode === 'diff', diff the content against this base */
   diffBase?: string | null;
   diffMode?: DiffMode;
@@ -26,6 +28,7 @@ export function OutputPanel({
   viewMode,
   warning,
   error,
+  statusBadge,
   diffBase,
   diffMode = "exact",
 }: OutputPanelProps) {
@@ -45,6 +48,11 @@ export function OutputPanel({
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {title}
         </h3>
+        {statusBadge && (
+          <Badge variant="outline" className="text-[10px] normal-case pt-[3px]">
+            {statusBadge}
+          </Badge>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {diffResult && (
             <div className="flex items-center gap-1.5">
